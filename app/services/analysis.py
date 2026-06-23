@@ -1,0 +1,154 @@
+import json
+import uuid
+from datetime import datetime, timezone
+from pathlib import Path
+
+from langchain_core.messages import HumanMessage
+from langchain_aws import ChatBedrock
+
+from app.config import settings
+from app.models import (
+    AuditQuestion,
+    ComplianceStatus,
+    HygieneAuditResult,
+)
+
+AUDIT_PROMPT = """You are a hand hygiene compliance auditor. Analyze the following video frames 
+from a hand washing procedure and evaluate compliance against these specific audit criteria:
+
+1. **Bare Below the Elbows**: Staff must have no watches, bracelets, rings (except plain wedding band), 
+   long sleeves, or any accessories below the elbow during hand washing.
+
+2. **Cuts and Grazes Covered**: Any visible cuts or grazes on hands/arms must be covered with a 
+   blue/waterproof plaster.
+
+3. **Correct Hand Hygiene Technique**: The WHO/NHS hand washing technique must be followed:
+   - Wet hands, apply soap
+   - Palm to palm rubbing
+   - Right palm over left dorsum and vice versa
+   - Palm to palm with fingers interlaced
+   - Backs of fingers to opposing palms
+   - Rotational rubbing of thumbs
+   - Rotational rubbing of clasped fingers in palms
+   - Rinse and dry thoroughly
+   - Duration should be approximately 20+ seconds
+
+4. **Paper Towel Disposal**: Paper towels must be disposed of without touching the waste bin lid 
+   (using a foot pedal or touchless bin).
+
+For each criterion, provide:
+- status: "compliant", "non_compliant", or "unable_to_determine"
+- confidence: a score between 0.0 and 1.0
+- observations: what you specifically observed in the video frames
+
+Also provide:
+- overall_compliant: true only if ALL criteria are compliant
+- summary: a brief overall assessment
+
+Respond ONLY with valid JSON in this exact format:
+{
+    "bare_below_elbows": {
+        "status": "compliant|non_compliant|unable_to_determine",
+        "confidence": 0.0,
+        "observations": "..."
+    },
+    "cuts_covered": {
+        "status": "compliant|non_compliant|unable_to_determine",
+        "confidence": 0.0,
+        "observations": "..."
+    },
+    "correct_technique": {
+        "status": "compliant|non_compliant|unable_to_determine",
+        "confidence": 0.0,
+        "observations": "..."
+    },
+    "paper_towel_disposal": {
+        "status": "compliant|non_compliant|unable_to_determine",
+        "confidence": 0.0,
+        "observations": "..."
+    },
+    "overall_compliant": false,
+    "summary": "..."
+}"""
+
+
+def _build_message_content(frames_b64: list[str]) -> list[dict]:
+    """Build a multimodal message with text prompt and image frames."""
+    content: list[dict] = [{"type": "text", "text": AUDIT_PROMPT}]
+
+    for i, frame in enumerate(frames_b64):
+        content.append(
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:image/jpeg;base64,{frame}"},
+            }
+        )
+
+    return content
+
+
+def _parse_response(raw_text: str) -> dict:
+    """Extract JSON from the model response."""
+    text = raw_text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
+        text = text.rsplit("```", 1)[0]
+    return json.loads(text)
+
+
+async def analyze_hand_hygiene(
+    frames_b64: list[str], video_filename: str
+) -> HygieneAuditResult:
+    """
+    Send extracted frames to Claude via Bedrock and parse the compliance result.
+    """
+    llm = ChatBedrock(
+        model_id=settings.bedrock_model_id,
+        region_name=settings.aws_region,
+    )
+
+    message = HumanMessage(content=_build_message_content(frames_b64))
+    response = await llm.ainvoke([message])
+
+    parsed = _parse_response(response.content)
+
+    def _make_question(key: str, question_text: str) -> AuditQuestion:
+        data = parsed[key]
+        return AuditQuestion(
+            question=question_text,
+            status=ComplianceStatus(data["status"]),
+            confidence=data["confidence"],
+            observations=data["observations"],
+        )
+
+    result = HygieneAuditResult(
+        id=str(uuid.uuid4()),
+        timestamp=datetime.now(timezone.utc),
+        video_filename=video_filename,
+        bare_below_elbows=_make_question(
+            "bare_below_elbows", "Staff are 'Bare Below the Elbows'"
+        ),
+        cuts_covered=_make_question(
+            "cuts_covered",
+            "Cuts and grazes are covered with a waterproof plaster",
+        ),
+        correct_technique=_make_question(
+            "correct_technique",
+            "The correct hand hygiene technique is used when washing hands",
+        ),
+        paper_towel_disposal=_make_question(
+            "paper_towel_disposal",
+            "Paper towels are disposed of without touching the waste bin lid",
+        ),
+        overall_compliant=parsed["overall_compliant"],
+        summary=parsed["summary"],
+    )
+
+    return result
+
+
+def save_result(result: HygieneAuditResult) -> Path:
+    """Save the audit result as a JSON file."""
+    output_path = settings.results_dir / f"{result.id}.json"
+    output_path.write_text(result.model_dump_json(indent=2))
+    return output_path
