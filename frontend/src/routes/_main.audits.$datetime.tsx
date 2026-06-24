@@ -1,5 +1,16 @@
 import { useEffect, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import {
+  Box,
+  Typography,
+  Chip,
+  LinearProgress,
+  Select,
+  MenuItem,
+  TextField,
+  Alert,
+} from '@mui/material'
+import { Button } from '@rld-engineering/base-camp-react'
 import { TopBar } from '../components/TopBar'
 import { getAudit, updateAudit, videoUrl } from '../api/client'
 import type { AnswerValue, AuditDetail } from '../types/api'
@@ -8,36 +19,48 @@ export const Route = createFileRoute('/_main/audits/$datetime')({
   component: AuditPage,
 })
 
-const STATUS_STYLES: Record<string, { label: string; className: string }> = {
-  COMPLIANT: { label: 'Compliant', className: 'bg-[#e6f6ee] text-[#0f7a5c] border-[#0f7a5c]' },
-  NOT_COMPLIANT: { label: 'Not compliant', className: 'bg-[#ffebeb] text-[#cc2121] border-[#cc2121]' },
-  NOT_APPLICABLE: { label: 'Not applicable', className: 'bg-[#f5f5f5] text-[#666666] border-[#999999]' },
+type ChipColor = 'success' | 'error' | 'default'
+
+const STATUS_STYLES: Record<string, { label: string; color: ChipColor }> = {
+  COMPLIANT: { label: 'Compliant', color: 'success' },
+  NOT_COMPLIANT: { label: 'Not compliant', color: 'error' },
+  NOT_APPLICABLE: { label: 'Not applicable', color: 'default' },
 }
-const PENDING_STYLE = { label: 'Pending', className: 'bg-[#f5f5f5] text-[#666666] border-[#999999]' }
+const PENDING_STYLE = { label: 'Pending', color: 'default' as ChipColor }
 const VALUE_OPTIONS: AnswerValue[] = ['COMPLIANT', 'NOT_COMPLIANT', 'NOT_APPLICABLE']
 
 function StatusBadge({ value }: { value: string | null }) {
   const style = (value && STATUS_STYLES[value]) || PENDING_STYLE
   return (
-    <span
-      className={`shrink-0 text-[12px] px-2 py-[2px] rounded-full border whitespace-nowrap ${style.className}`}
-    >
-      {style.label}
-    </span>
+    <Chip
+      size="small"
+      label={style.label}
+      color={style.color}
+      variant="outlined"
+      sx={{ flexShrink: 0, fontSize: 12, height: 22 }}
+    />
   )
 }
 
 function ConfidenceMeter({ value }: { value: number }) {
   const percent = Math.round(value * 100)
   return (
-    <div className="flex items-center gap-2 shrink-0" title={`AI confidence: ${percent}%`}>
-      <div className="w-[60px] h-[6px] rounded-full bg-[#e5e8e8] overflow-hidden">
-        <div className="h-full bg-[#14716d]" style={{ width: `${percent}%` }} />
-      </div>
-      <span className="text-[12px] text-[rgba(0,0,0,0.62)] whitespace-nowrap">
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }} title={`AI confidence: ${percent}%`}>
+      <LinearProgress
+        variant="determinate"
+        value={percent}
+        sx={{
+          width: 60,
+          height: 6,
+          borderRadius: 999,
+          bgcolor: '#e5e8e8',
+          '& .MuiLinearProgress-bar': { bgcolor: '#14716d' },
+        }}
+      />
+      <Typography sx={{ fontSize: 12, color: 'rgba(0,0,0,0.62)', whiteSpace: 'nowrap' }}>
         Confidence: {percent}%
-      </span>
-    </div>
+      </Typography>
+    </Box>
   )
 }
 
@@ -94,126 +117,128 @@ function AuditPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white" style={{ fontFamily: 'Geist, sans-serif' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#fff' }}>
       <TopBar />
 
-      <div className="pt-[44px]">
-        <div className="flex items-center gap-2 px-3 py-2 min-h-[56px]">
-          <h1
-            className="text-[#151d1e] text-[24px] leading-[1.4] shrink-0"
-            style={{ fontWeight: 600 }}
-          >
+      <Box sx={{ pt: '44px' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 1, minHeight: 56 }}>
+          <Typography component="h1" sx={{ color: '#151d1e', fontSize: 24, lineHeight: 1.4, flexShrink: 0, fontWeight: 600 }}>
             Audit
-          </h1>
-          <span
-            className="flex-1 min-w-0 text-[14px] text-[rgba(0,0,0,0.62)] leading-[1.3] truncate"
-            style={{ fontWeight: 400 }}
-          >
+          </Typography>
+          <Typography noWrap sx={{ flex: 1, minWidth: 0, fontSize: 14, color: 'rgba(0,0,0,0.62)', lineHeight: 1.3 }}>
             {detail?.unit}
-          </span>
+          </Typography>
 
           {editing ? (
             <>
-              <button
-                onClick={cancelEditing}
+              <Button label="Cancel" variant="outlined" size="small" disabled={saving} onClick={cancelEditing} />
+              <Button
+                label={saving ? 'Saving…' : 'Save changes'}
+                color="secondary"
+                size="small"
                 disabled={saving}
-                className="shrink-0 h-[28px] px-2 py-1 rounded-[8px] border border-[#1f4cb3] text-[#1f4cb3] text-[14px] leading-[1.2] bg-transparent hover:bg-[#e8eeff] transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
                 onClick={handleSave}
-                disabled={saving}
-                className="shrink-0 h-[28px] px-3 rounded-[8px] bg-[#14716d] text-white text-[14px] leading-[1.2] disabled:opacity-50"
-              >
-                {saving ? 'Saving…' : 'Save changes'}
-              </button>
+              />
             </>
           ) : (
-            <button
-              onClick={startEditing}
-              disabled={!detail}
-              className="shrink-0 h-[28px] px-2 py-1 rounded-[8px] border border-[#1f4cb3] text-[#1f4cb3] text-[14px] leading-[1.2] bg-transparent hover:bg-[#e8eeff] transition-colors disabled:opacity-50"
-              style={{ fontWeight: 400 }}
-            >
-              Edit answers
-            </button>
+            <Button label="Edit answers" variant="outlined" size="small" disabled={!detail} onClick={startEditing} />
           )}
 
-          <button
-            onClick={() => navigate({ to: '/' })}
-            className="shrink-0 h-[28px] px-2 py-1 rounded-[8px] border border-[#1f4cb3] text-[#1f4cb3] text-[14px] leading-[1.2] bg-transparent hover:bg-[#e8eeff] transition-colors"
-            style={{ fontWeight: 400 }}
+          <Button label="Back to Alerts" variant="outlined" size="small" onClick={() => navigate({ to: '/' })} />
+        </Box>
+
+        <Box sx={{ display: 'flex', px: 1.5, pb: 3, height: 'calc(100vh - 44px - 56px)' }}>
+          <Box
+            sx={{
+              width: '66.666%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              bgcolor: '#151d1e',
+              borderRadius: '12px 0 0 12px',
+              border: '1px solid #c1cacb',
+              overflow: 'hidden',
+            }}
           >
-            Back to Alerts
-          </button>
-        </div>
-
-        <div className="flex px-3 pb-6 gap-0" style={{ height: 'calc(100vh - 44px - 56px)' }}>
-          <div className="w-2/3 flex items-center justify-center bg-[#151d1e] rounded-l-[12px] border border-[#c1cacb] overflow-hidden">
             {detail?.has_video ? (
-              <video src={videoUrl(auditId)} controls className="w-full h-full object-contain" />
+              <video src={videoUrl(auditId)} controls style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             ) : (
-              <p className="text-[14px] text-[rgba(255,255,255,0.6)]">No video available for this audit.</p>
+              <Typography sx={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>
+                No video available for this audit.
+              </Typography>
             )}
-          </div>
+          </Box>
 
-          <div className="w-1/3 border border-l-0 border-[#c1cacb] rounded-r-[12px] overflow-y-auto">
-            {error && <p className="m-3 text-[14px] text-[#cc2121]">{error}</p>}
+          <Box
+            sx={{
+              width: '33.333%',
+              border: '1px solid #c1cacb',
+              borderLeft: 0,
+              borderRadius: '0 12px 12px 0',
+              overflowY: 'auto',
+            }}
+          >
+            {error && (
+              <Alert severity="error" sx={{ m: 1.5 }}>
+                {error}
+              </Alert>
+            )}
 
             {!detail ? (
-              <p className="p-4 text-[14px] text-[rgba(0,0,0,0.5)]">Loading…</p>
+              <Typography sx={{ p: 2, fontSize: 14, color: 'rgba(0,0,0,0.5)' }}>Loading…</Typography>
             ) : !editing ? (
               detail.questions.map((q) => (
-                <div key={q.question_id} className="px-4 py-3 border-b border-[#e5e8e8]">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <span className="text-[16px] text-[#151d1e]" style={{ fontWeight: 600 }}>
+                <Box key={q.question_id} sx={{ px: 2, py: 1.5, borderBottom: '1px solid #e5e8e8' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, mb: 0.5 }}>
+                    <Typography sx={{ fontSize: 16, color: '#151d1e', fontWeight: 600 }}>
                       {q.short_label ?? q.text}
-                    </span>
+                    </Typography>
                     <StatusBadge value={q.value} />
-                  </div>
-                  <p className="text-[13px] text-[rgba(0,0,0,0.62)] mb-1">{q.text}</p>
-                  {q.comment && <p className="text-[14px] text-black mb-1">{q.comment}</p>}
+                  </Box>
+                  <Typography sx={{ fontSize: 13, color: 'rgba(0,0,0,0.62)', mb: 0.5 }}>{q.text}</Typography>
+                  {q.comment && <Typography sx={{ fontSize: 14, color: '#000', mb: 0.5 }}>{q.comment}</Typography>}
                   {q.confidence != null && <ConfidenceMeter value={q.confidence} />}
-                </div>
+                </Box>
               ))
             ) : (
               draft.map((q) => (
-                <div key={q.question_id} className="px-4 py-3 border-b border-[#e5e8e8]">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <span className="text-[16px] text-[#151d1e]" style={{ fontWeight: 600 }}>
+                <Box key={q.question_id} sx={{ px: 2, py: 1.5, borderBottom: '1px solid #e5e8e8' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, mb: 0.5 }}>
+                    <Typography sx={{ fontSize: 16, color: '#151d1e', fontWeight: 600 }}>
                       {q.short_label ?? q.text}
-                    </span>
+                    </Typography>
                     {q.confidence != null && <ConfidenceMeter value={q.confidence} />}
-                  </div>
-                  <p className="text-[13px] text-[rgba(0,0,0,0.62)] mb-2">{q.text}</p>
+                  </Box>
+                  <Typography sx={{ fontSize: 13, color: 'rgba(0,0,0,0.62)', mb: 1 }}>{q.text}</Typography>
 
-                  <select
+                  <Select
+                    size="small"
+                    fullWidth
                     value={q.value ?? 'NOT_APPLICABLE'}
-                    onChange={(e) =>
-                      updateDraftQuestion(q.question_id, { value: e.target.value as AnswerValue })
-                    }
-                    className="w-full bg-white border border-[#515757] rounded-[8px] px-3 py-2 text-[14px] mb-2"
+                    onChange={(e) => updateDraftQuestion(q.question_id, { value: e.target.value as AnswerValue })}
+                    sx={{ fontSize: 14, mb: 1 }}
                   >
                     {VALUE_OPTIONS.map((v) => (
-                      <option key={v} value={v}>
+                      <MenuItem key={v} value={v} sx={{ fontSize: 14 }}>
                         {v}
-                      </option>
+                      </MenuItem>
                     ))}
-                  </select>
+                  </Select>
 
-                  <textarea
+                  <TextField
+                    fullWidth
+                    multiline
+                    minRows={2}
                     value={q.comment ?? ''}
                     onChange={(e) => updateDraftQuestion(q.question_id, { comment: e.target.value })}
-                    className="w-full bg-white border border-[#515757] rounded-[8px] px-3 py-2 text-[14px]"
-                    rows={2}
+                    slotProps={{ htmlInput: { style: { fontSize: 14 } } }}
                   />
-                </div>
+                </Box>
               ))
             )}
-          </div>
-        </div>
-      </div>
-    </div>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   )
 }

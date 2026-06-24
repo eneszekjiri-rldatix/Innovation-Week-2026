@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { ChevronDown } from 'lucide-react'
+import { Box, Typography, Select, MenuItem, FormControl } from '@mui/material'
+import { Page, Button } from '@rld-engineering/base-camp-react'
 import { TopBar } from '../components/TopBar'
 import { AlertCard } from '../components/AlertCard'
 import { AlertDetail } from '../components/AlertDetail'
 import { listAudits } from '../api/client'
+import { KNOWN_UNITS } from './_main.upload'
 import { auditSummaryToAlert } from '../api/mappers'
 import type { Alert } from '../types/alerts'
 
@@ -44,58 +46,46 @@ function AlertDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-white" style={{ fontFamily: 'Geist, sans-serif' }}>
+    <Page queryKey={['audits']} sx={{ minHeight: '100vh', bgcolor: '#fff' }}>
       <TopBar />
 
-      <div className="pt-[44px]">
-        <div className="flex items-center justify-between px-3 py-2 min-h-[56px]">
-          <h1
-            className="text-[#151d1e] text-[24px] leading-[1.4]"
-            style={{ fontWeight: 600 }}
-          >
+      <Box sx={{ pt: '44px' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1, minHeight: 56 }}>
+          <Typography component="h1" sx={{ color: '#151d1e', fontSize: 24, lineHeight: 1.4, fontWeight: 600 }}>
             Home
-          </h1>
+          </Typography>
 
-          <div className="flex items-center gap-2">
-            <button
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Button
+              label="Upload video"
+              variant="outlined"
+              color="secondary"
               onClick={() => navigate({ to: '/upload' })}
-              className="h-[36px] px-3 rounded-[8px] border border-[#14716d] text-[#14716d] text-[14px] bg-transparent hover:bg-[#eaf5f4] transition-colors"
-              style={{ fontFamily: 'Geist, sans-serif', fontWeight: 400 }}
-            >
-              Upload video
-            </button>
+            />
 
-            <div className="relative w-[220px]">
-              <select
+            <FormControl size="small" sx={{ width: 220 }}>
+              <Select
                 value={selectedUnit}
                 onChange={(e) => setSelectedUnit(e.target.value)}
-                className="w-full appearance-none bg-white border border-[#515757] rounded-[8px] px-3 py-2 pr-8 text-[14px] text-[#515757] cursor-pointer focus:outline-none focus:border-[#14716d]"
-                style={{ fontFamily: 'Geist, sans-serif', fontWeight: 300 }}
+                sx={{ fontSize: 14, borderRadius: '8px', bgcolor: '#fff' }}
               >
                 {units.map((unit) => (
-                  <option key={unit} value={unit}>
+                  <MenuItem key={unit} value={unit} sx={{ fontSize: 14 }}>
                     {unit}
-                  </option>
+                  </MenuItem>
                 ))}
-              </select>
-              <ChevronDown
-                className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[#151d1e]"
-                size={16}
-              />
-            </div>
-          </div>
-        </div>
+              </Select>
+            </FormControl>
+          </Box>
+        </Box>
 
-        <div className="flex gap-3 px-3 pb-3" style={{ height: 'calc(100vh - 44px - 56px)' }}>
-          <div className="w-1/3 bg-white rounded-[12px] border border-[#c1cacb] flex flex-col overflow-hidden">
-            <div className="flex flex-col gap-2 p-3 overflow-y-auto h-full">
+        <Box sx={{ display: 'flex', gap: 1.5, px: 1.5, pb: 1.5, height: 'calc(100vh - 44px - 56px)' }}>
+          <Box sx={{ width: '33.333%', bgcolor: '#fff', borderRadius: '12px', border: '1px solid #c1cacb', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.5, overflowY: 'auto', height: '100%' }}>
               {filteredAlerts.length === 0 ? (
-                <p
-                  className="text-[14px] text-[rgba(0,0,0,0.5)] text-center mt-8"
-                  style={{ fontFamily: 'Geist, sans-serif' }}
-                >
+                <Typography sx={{ fontSize: 14, color: 'rgba(0,0,0,0.5)', textAlign: 'center', mt: 4 }}>
                   No alerts for this unit.
-                </p>
+                </Typography>
               ) : (
                 filteredAlerts.map((alert) => (
                   <AlertCard
@@ -106,14 +96,14 @@ function AlertDashboard() {
                   />
                 ))
               )}
-            </div>
-          </div>
+            </Box>
+          </Box>
 
-          <div className="w-2/3 bg-white rounded-[8px] border border-[#cccccc] overflow-hidden">
+          <Box sx={{ width: '66.666%', bgcolor: '#fff', borderRadius: '8px', border: '1px solid #cccccc', overflow: 'hidden' }}>
             {selectedAlert && <AlertDetail alert={selectedAlert} onOpenAudit={handleOpenAudit} />}
-          </div>
-        </div>
-      </div>
-    </div>
+          </Box>
+        </Box>
+      </Box>
+    </Page>
   )
 }

@@ -1,3 +1,7 @@
+import truststore
+
+truststore.inject_into_ssl()
+
 from pathlib import Path
 
 from dotenv import load_dotenv

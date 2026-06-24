@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { Box, Typography } from '@mui/material';
+import { Button } from '@rld-engineering/base-camp-react';
 import type { Alert, Standard } from '../types/alerts';
 import type { ChartSeries } from './ComplianceChart';
 import { getAudit, getTrend } from '../api/client';
@@ -11,18 +13,6 @@ const TREND_COLORS = ['#3870F2', '#0FAB85', '#8C59F7', '#E0850F', '#D52020', '#1
 interface AlertDetailProps {
   alert: Alert;
   onOpenAudit: () => void;
-}
-
-function OutlineButton({ label, onClick }: { label: string; onClick?: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="h-[28px] px-2 py-1 rounded-[8px] border border-[#1f4cb3] text-[#1f4cb3] text-[14px] leading-[1.2] bg-transparent hover:bg-[#e8eeff] transition-colors"
-      style={{ fontFamily: 'Geist, sans-serif', fontWeight: 400 }}
-    >
-      {label}
-    </button>
-  );
 }
 
 export function AlertDetail({ alert, onOpenAudit }: AlertDetailProps) {
@@ -62,44 +52,35 @@ export function AlertDetail({ alert, onOpenAudit }: AlertDetailProps) {
   }, [alert.id]);
 
   return (
-    <div className="flex flex-col gap-3 h-full overflow-y-auto p-4">
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, height: '100%', overflowY: 'auto', p: 2 }}>
       <SectionTitle title={alert.auditType} subtitle={alert.unit} />
 
-      <div className="flex gap-2 items-center">
-        <OutlineButton label="Open Audit" onClick={onOpenAudit} />
-        <OutlineButton label="Create Finding" />
-      </div>
+      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+        <Button label="Open Audit" variant="outlined" onClick={onOpenAudit} />
+        <Button label="Create Finding" variant="outlined" />
+      </Box>
 
       <ComplianceChart series={series} />
 
       <SectionTitle title="Standards" />
 
-      <div className="flex flex-col gap-4">
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {standards.length === 0 && (
-          <p
-            className="text-[14px] text-[#0f7a5c]"
-            style={{ fontFamily: 'Geist, sans-serif', fontWeight: 400 }}
-          >
+          <Typography sx={{ fontSize: 14, color: '#0f7a5c' }}>
             No failing standards — this audit was fully compliant.
-          </p>
+          </Typography>
         )}
         {standards.map((standard) => (
-          <div key={standard.metric}>
-            <p
-              className="text-[16px] text-black tracking-[0.1px] leading-[1.57] mb-1"
-              style={{ fontFamily: 'Geist, sans-serif', fontWeight: 500 }}
-            >
+          <Box key={standard.metric}>
+            <Typography sx={{ fontSize: 16, color: '#000', letterSpacing: '0.1px', lineHeight: 1.57, fontWeight: 500, mb: 0.5 }}>
               {standard.metric}
-            </p>
-            <p
-              className="text-[14px] text-black tracking-[0.17px] leading-[1.43]"
-              style={{ fontFamily: 'Geist, sans-serif', fontWeight: 400 }}
-            >
+            </Typography>
+            <Typography sx={{ fontSize: 14, color: '#000', letterSpacing: '0.17px', lineHeight: 1.43 }}>
               {standard.description}
-            </p>
-          </div>
+            </Typography>
+          </Box>
         ))}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

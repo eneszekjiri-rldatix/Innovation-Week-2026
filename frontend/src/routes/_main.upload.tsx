@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Box, Typography, Select, MenuItem, FormControl, InputLabel, Alert, Button as MuiButton } from '@mui/material'
+import { Page, PageCard, Button } from '@rld-engineering/base-camp-react'
 import { TopBar } from '../components/TopBar'
 import { uploadVideo } from '../api/client'
 
@@ -7,7 +9,7 @@ export const Route = createFileRoute('/_main/upload')({
   component: UploadVideoPage,
 })
 
-const KNOWN_UNITS = ['Intensive Care Unit', 'Acute Medical Ward', 'HDU']
+export const KNOWN_UNITS = ['Intensive Care Unit', 'Acute Medical Ward', 'HDU']
 
 function UploadVideoPage() {
   const navigate = useNavigate()
@@ -31,51 +33,76 @@ function UploadVideoPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white" style={{ fontFamily: 'Geist, sans-serif' }}>
+    <Page sx={{ minHeight: '100vh', bgcolor: '#fff' }}>
       <TopBar />
 
-      <div className="pt-[44px] px-3 py-4 max-w-[480px]">
-        <h1 className="text-[#151d1e] text-[24px] leading-[1.4] mb-4" style={{ fontWeight: 600 }}>
-          Upload video
-        </h1>
+      <Box
+        sx={{
+          pt: '44px',
+          minHeight: 'calc(100vh - 44px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          px: 1.5,
+          py: 2,
+        }}
+      >
+        <Box sx={{ maxWidth: 480, width: '100%' }}>
+          <Typography component="h1" sx={{ color: '#151d1e', fontSize: 24, lineHeight: 1.4, mb: 2, fontWeight: 600 }}>
+            Upload video
+          </Typography>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div>
-            <label className="block text-[14px] text-[#515757] mb-1">Video file</label>
-            <input
-              type="file"
-              accept="video/mp4,video/avi,video/quicktime,video/x-matroska,video/webm"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              className="w-full text-[14px]"
+          <PageCard sx={{ p: 2 }}>
+            <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box>
+                <Typography component="label" sx={{ display: 'block', fontSize: 14, color: '#515757', mb: 0.5 }}>
+                  Video file
+                </Typography>
+                <MuiButton
+                  component="label"
+                  variant="outlined"
+                  fullWidth
+                  sx={{ justifyContent: 'flex-start', fontSize: 14, textTransform: 'none', color: file ? '#151d1e' : 'rgba(0,0,0,0.5)' }}
+                >
+                  {file ? file.name : 'Choose video file'}
+                  <input
+                    type="file"
+                    hidden
+                    accept="video/mp4,video/avi,video/quicktime,video/x-matroska,video/webm"
+                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                  />
+                </MuiButton>
+              </Box>
+
+            <FormControl size="small" fullWidth>
+              <InputLabel id="upload-unit-label">Unit</InputLabel>
+              <Select
+                labelId="upload-unit-label"
+                label="Unit"
+                value={unit}
+                onChange={(e) => setUnit(e.target.value)}
+                sx={{ fontSize: 14, bgcolor: '#fff' }}
+              >
+                {KNOWN_UNITS.map((u) => (
+                  <MenuItem key={u} value={u} sx={{ fontSize: 14 }}>
+                    {u}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {error && <Alert severity="error">{error}</Alert>}
+
+            <Button
+              type="submit"
+              label={status === 'uploading' ? 'Analyzing…' : 'Upload and analyze'}
+              color="secondary"
+              disabled={!file || status === 'uploading'}
             />
-          </div>
-
-          <div>
-            <label className="block text-[14px] text-[#515757] mb-1">Unit</label>
-            <select
-              value={unit}
-              onChange={(e) => setUnit(e.target.value)}
-              className="w-full bg-white border border-[#515757] rounded-[8px] px-3 py-2 text-[14px] text-[#515757]"
-            >
-              {KNOWN_UNITS.map((u) => (
-                <option key={u} value={u}>
-                  {u}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {error && <p className="text-[14px] text-[#cc2121]">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={!file || status === 'uploading'}
-            className="h-[36px] px-3 rounded-[8px] bg-[#14716d] text-white text-[14px] disabled:opacity-50"
-          >
-            {status === 'uploading' ? 'Analyzing…' : 'Upload and analyze'}
-          </button>
-        </form>
-      </div>
-    </div>
+          </Box>
+        </PageCard>
+        </Box>
+      </Box>
+    </Page>
   )
 }

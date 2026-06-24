@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
+import { Box, Typography } from '@mui/material';
 
 export interface ChartSeriesPoint {
   date: string;
@@ -96,24 +97,24 @@ export function ComplianceChart({ series, thresholdPercent = 72 }: ComplianceCha
 
   if (allDates.length === 0) {
     return (
-      <p className="text-[14px] text-[rgba(0,0,0,0.5)] text-center py-6" style={{ fontFamily: 'Geist, sans-serif' }}>
+      <Typography sx={{ fontSize: 14, color: 'rgba(0,0,0,0.5)', textAlign: 'center', py: 3 }}>
         No trend data yet for this unit.
-      </p>
+      </Typography>
     );
   }
 
   return (
-    <div className="w-full select-none">
-      <div className="flex flex-wrap gap-x-4 gap-y-1 justify-end mb-1 pr-2">
+    <Box sx={{ width: '100%', userSelect: 'none' }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', columnGap: 2, rowGap: 0.5, justifyContent: 'flex-end', mb: 0.5, pr: 1 }}>
         {series.map((s) => (
-          <div key={s.key} className="flex items-center gap-1">
-            <span className="inline-block w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
-            <span className="text-[12px] text-black tracking-[0.4px]" style={{ fontFamily: 'Inter, sans-serif' }}>
+          <Box key={s.key} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Box sx={{ display: 'inline-block', width: 12, height: 12, borderRadius: '50%', flexShrink: 0, backgroundColor: s.color }} />
+            <Typography sx={{ fontSize: 12, color: '#000', letterSpacing: '0.4px' }}>
               {s.label}
-            </span>
-          </div>
+            </Typography>
+          </Box>
         ))}
-      </div>
+      </Box>
 
       <svg
         ref={svgRef}
@@ -178,20 +179,35 @@ export function ComplianceChart({ series, thresholdPercent = 72 }: ComplianceCha
       </svg>
 
       {hoverDate && (
-        <div className="mx-[38px] px-3 py-2 bg-white border border-[#DEE3F0] rounded text-[12px] flex gap-4 flex-wrap" style={{ fontFamily: 'Inter, sans-serif' }}>
-          <span className="font-medium text-[#151d1e]">{formatDate(hoverDate)}</span>
+        <Box
+          sx={{
+            mx: '38px',
+            px: 1.5,
+            py: 1,
+            bgcolor: '#fff',
+            border: '1px solid #DEE3F0',
+            borderRadius: 1,
+            fontSize: 12,
+            display: 'flex',
+            gap: 2,
+            flexWrap: 'wrap',
+          }}
+        >
+          <Typography component="span" sx={{ fontSize: 12, fontWeight: 500, color: '#151d1e' }}>
+            {formatDate(hoverDate)}
+          </Typography>
           {series.map((s) => {
             const v = valueAt(s, hoverDate);
             if (v == null) return null;
             return (
-              <div key={s.key} className="flex items-center gap-1">
-                <span className="inline-block w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
-                <span style={{ color: s.color }}>{v}%</span>
-              </div>
+              <Box key={s.key} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <Box sx={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', flexShrink: 0, backgroundColor: s.color }} />
+                <Typography component="span" sx={{ fontSize: 12, color: s.color }}>{v}%</Typography>
+              </Box>
             );
           })}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   );
 }

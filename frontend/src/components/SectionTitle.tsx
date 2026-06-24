@@ -1,3 +1,5 @@
+import { Box, Typography } from '@mui/material';
+
 interface SectionTitleProps {
   title: string;
   subtitle?: string;
@@ -5,23 +7,35 @@ interface SectionTitleProps {
 
 export function SectionTitle({ title, subtitle }: SectionTitleProps) {
   return (
-    <div className="flex items-center w-full rounded-[8px] bg-[#f5f7fa] border border-[#c1cacb] px-2 py-[9px] min-h-[40px]">
-      <div className="flex flex-wrap gap-2 items-center flex-1 min-w-0">
-        <span
-          className="text-[#151d1e] text-[16px] leading-[1.4] truncate"
-          style={{ fontFamily: 'Geist, sans-serif', fontWeight: 600 }}
+    <Box
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        width: '100%',
+        borderRadius: '8px',
+        bgcolor: '#f5f7fa',
+        border: '1px solid #c1cacb',
+        px: 1,
+        py: '9px',
+        minHeight: 40,
+      }}
+    >
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center', flex: 1, minWidth: 0 }}>
+        <Typography
+          noWrap
+          sx={{ color: '#151d1e', fontSize: 16, lineHeight: 1.4, fontWeight: 600 }}
         >
           {title}
-        </span>
+        </Typography>
         {subtitle && (
-          <span
-            className="text-[rgba(0,0,0,0.62)] text-[14px] leading-[1.3] truncate"
-            style={{ fontFamily: 'Geist, sans-serif', fontWeight: 400 }}
+          <Typography
+            noWrap
+            sx={{ color: 'rgba(0,0,0,0.62)', fontSize: 14, lineHeight: 1.3 }}
           >
             {subtitle}
-          </span>
+          </Typography>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   );
 }

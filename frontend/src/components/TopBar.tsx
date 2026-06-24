@@ -1,23 +1,39 @@
+import { AppBar, Toolbar, Typography, Avatar, Box } from '@mui/material';
+
 export function TopBar() {
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-[44px] bg-[#14716d] flex items-center justify-between px-4">
-      <span
-        className="text-white text-[16px] tracking-[0.15px]"
-        style={{ fontFamily: 'Geist, sans-serif', fontWeight: 400 }}
+    <AppBar
+      position="fixed"
+      sx={{ height: 44, bgcolor: '#14716d', zIndex: (theme) => theme.zIndex.appBar }}
+    >
+      <Toolbar
+        sx={{
+          height: 44,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          px: 2,
+        }}
       >
-        Audits and standards
-      </span>
-      <div
-        className="relative flex items-center justify-center w-[28px] h-[28px] rounded-full bg-[#d3e4d6] border border-[#185956]"
-        aria-label="User: AS"
-      >
-        <span
-          className="text-[#0f4146] text-[12px] select-none"
-          style={{ fontFamily: 'Geist, sans-serif', fontWeight: 600 }}
-        >
-          AS
-        </span>
-      </div>
-    </header>
+        <Typography sx={{ color: '#fff', fontSize: 16, letterSpacing: '0.15px' }}>
+          Audits and standards
+        </Typography>
+        <Box aria-label="User: AS">
+          <Avatar
+            sx={{
+              width: 28,
+              height: 28,
+              bgcolor: '#d3e4d6',
+              border: '1px solid #185956',
+              color: '#0f4146',
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          >
+            AS
+          </Avatar>
+        </Box>
+      </Toolbar>
+    </AppBar>
   );
 }

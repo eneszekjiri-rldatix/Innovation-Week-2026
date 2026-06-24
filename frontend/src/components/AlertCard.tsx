@@ -1,3 +1,5 @@
+import { Box, Typography, List, ListItem } from '@mui/material';
+import { PageCard, OverflowTooltip } from '@rld-engineering/base-camp-react';
 import type { Alert } from '../types/alerts';
 
 interface AlertCardProps {
@@ -8,65 +10,66 @@ interface AlertCardProps {
 
 export function AlertCard({ alert, isSelected, onClick }: AlertCardProps) {
   return (
-    <button
+    <PageCard
       onClick={onClick}
-      className={[
-        'w-full text-left rounded-[8px] px-[13px] py-[11px] transition-colors',
-        'border',
-        isSelected
-          ? 'bg-[#e4f3ff] border-[#1f4cb3]'
-          : 'bg-white border-[#cccccc] hover:border-[#aaaaaa] hover:bg-[#f8fbff]',
-      ].join(' ')}
+      sx={{
+        cursor: 'pointer',
+        borderRadius: '8px',
+        px: '13px',
+        py: '11px',
+        border: '1px solid',
+        transition: 'background-color 0.15s, border-color 0.15s',
+        bgcolor: isSelected ? '#e4f3ff' : '#fff',
+        borderColor: isSelected ? '#1f4cb3' : '#cccccc',
+        '&:hover': isSelected
+          ? {}
+          : { borderColor: '#aaaaaa', bgcolor: '#f8fbff' },
+      }}
     >
-      <div className="flex items-center gap-[5px] w-full mb-[5px]">
-        <span
-          className="flex-1 min-w-0 text-[16px] text-black tracking-[0.15px] truncate"
-          style={{ fontFamily: 'Geist, sans-serif', fontWeight: 500 }}
-        >
-          {alert.auditType}
-        </span>
-        <span
-          className="shrink-0 text-[12px] text-[rgba(0,0,0,0.87)] tracking-[0.4px]"
-          style={{ fontFamily: 'Geist, sans-serif', fontWeight: 400 }}
-        >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: '5px', width: '100%', mb: '5px' }}>
+        <OverflowTooltip
+          text={alert.auditType}
+          width="100%"
+          typographyProps={{
+            sx: { flex: 1, minWidth: 0, fontSize: 16, color: '#000', letterSpacing: '0.15px', fontWeight: 500 },
+          }}
+        />
+        <Typography sx={{ flexShrink: 0, fontSize: 12, color: 'rgba(0,0,0,0.87)', letterSpacing: '0.4px' }}>
           {alert.date}
-        </span>
-      </div>
+        </Typography>
+      </Box>
 
-      <p
-        className="text-[14px] text-black tracking-[0.17px] leading-[1.43] mb-[4px]"
-        style={{ fontFamily: 'Geist, sans-serif', fontWeight: 400 }}
-      >
+      <Typography sx={{ fontSize: 14, color: '#000', letterSpacing: '0.17px', lineHeight: 1.43, mb: '4px' }}>
         {alert.unit}
-      </p>
+      </Typography>
 
       {alert.events.length === 0 ? (
-        <p
-          className="text-[14px] text-[#0f7a5c] tracking-[0.17px] leading-[1.43]"
-          style={{ fontFamily: 'Geist, sans-serif', fontWeight: 400 }}
-        >
+        <Typography sx={{ fontSize: 14, color: '#0f7a5c', letterSpacing: '0.17px', lineHeight: 1.43 }}>
           No issues found
-        </p>
+        </Typography>
       ) : alert.events.length === 1 ? (
-        <p
-          className="text-[14px] text-[rgba(0,0,0,0.6)] tracking-[0.17px] leading-[1.43]"
-          style={{ fontFamily: 'Geist, sans-serif', fontWeight: 400 }}
-        >
+        <Typography sx={{ fontSize: 14, color: 'rgba(0,0,0,0.6)', letterSpacing: '0.17px', lineHeight: 1.43 }}>
           {alert.events[0]}
-        </p>
+        </Typography>
       ) : (
-        <ul className="list-disc">
+        <List sx={{ listStyleType: 'disc', pl: '21px', py: 0 }}>
           {alert.events.map((event) => (
-            <li
+            <ListItem
               key={event}
-              className="ms-[21px] text-[14px] text-[rgba(0,0,0,0.6)] tracking-[0.17px] leading-[1.43]"
-              style={{ fontFamily: 'Geist, sans-serif', fontWeight: 400 }}
+              sx={{
+                display: 'list-item',
+                p: 0,
+                fontSize: 14,
+                color: 'rgba(0,0,0,0.6)',
+                letterSpacing: '0.17px',
+                lineHeight: 1.43,
+              }}
             >
               {event}
-            </li>
+            </ListItem>
           ))}
-        </ul>
+        </List>
       )}
-    </button>
+    </PageCard>
   );
 }
