@@ -1,6 +1,7 @@
 import json
-import uuid
 import logging
+import os
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -76,27 +77,59 @@ Respond ONLY with valid JSON in this exact format:
 
 
 def _build_message_content(frames_b64: list[str]) -> list[dict]:
-    """Build a multimodal message with text prompt and image frames."""
+    """Build a Bedrock/Anthropic multimodal message with text prompt and images."""
     content: list[dict] = [{"type": "text", "text": AUDIT_PROMPT}]
 
-    for i, frame in enumerate(frames_b64):
+    for index, frame in enumerate(frames_b64, start=1):
+        content.append({"type": "text", "text": f"Sampled video frame {index}:"})
         content.append(
             {
-                "type": "image_url",
-                "image_url": {"url": f"data:image/jpeg;base64,{frame}"},
+                "type": "image",
+                "source": {
+                    "type": "base64",
+                    "media_type": "image/jpeg",
+                    "data": frame,
+                },
             }
         )
 
     return content
 
 
-def _parse_response(raw_text: str) -> dict:
+def _response_content_to_text(content: str | list[dict]) -> str:
+    """Normalize LangChain response content into plain text."""
+    if isinstance(content, str):
+        return content
+
+    text_parts = []
+    for block in content:
+        if block.get("type") == "text":
+            text_parts.append(block.get("text", ""))
+
+    return "\n".join(text_parts)
+
+
+def _parse_response(raw_content: str | list[dict]) -> dict:
     """Extract JSON from the model response."""
-    text = raw_text.strip()
+    text = _response_content_to_text(raw_content).strip()
     if text.startswith("```"):
         text = text.split("\n", 1)[1] if "\n" in text else text[3:]
         text = text.rsplit("```", 1)[0]
+    if "{" in text and "}" in text:
+        text = text[text.find("{") : text.rfind("}") + 1]
     return json.loads(text)
+
+
+def _aws_credentials_look_configured() -> bool:
+    """Catch obvious placeholder credentials before calling Bedrock."""
+    access_key = os.getenv("AWS_ACCESS_KEY_ID", "")
+    secret_key = os.getenv("AWS_SECRET_ACCESS_KEY", "")
+    return (
+        bool(access_key)
+        and bool(secret_key)
+        and "INSERT" not in access_key.upper()
+        and "INSERT" not in secret_key.upper()
+    )
 
 
 async def analyze_hand_hygiene(
@@ -110,9 +143,16 @@ async def analyze_hand_hygiene(
         logger.info("Using mock analysis (set HYGIENE_USE_MOCK=false to use Bedrock)")
         return _mock_result(video_filename, len(frames_b64))
 
+    if not _aws_credentials_look_configured():
+        raise RuntimeError(
+            "Bedrock credentials are not configured. Replace the placeholder AWS keys "
+            "in .env, then restart the API."
+        )
+
     llm = ChatBedrock(
         model_id=settings.bedrock_model_id,
         region_name=settings.aws_region,
+        model_kwargs={"temperature": 0},
     )
 
     message = HumanMessage(content=_build_message_content(frames_b64))

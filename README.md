@@ -33,22 +33,33 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### AWS Configuration
+### AWS Bedrock Configuration
 
-Ensure your AWS credentials are configured. The app uses `boto3` which reads from:
-- Environment variables (`AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`)
-- AWS credentials file (`~/.aws/credentials`)
-- IAM role (if running on AWS)
+The project includes a local `.env` file with placeholders. Once you have Bedrock access, replace:
+
+```env
+AWS_ACCESS_KEY_ID=<INSERT AWS ACCESS KEY ID HERE>
+AWS_SECRET_ACCESS_KEY=<INSERT AWS SECRET ACCESS KEY HERE>
+```
+
+The app loads these values automatically and uses `boto3` through LangChain's `ChatBedrock` integration.
 
 You need Bedrock model access enabled for Claude in your AWS account.
+
+For local upload testing without calling Bedrock, set:
+
+```env
+HYGIENE_USE_MOCK=true
+```
 
 ### Environment Variables (Optional)
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `HYGIENE_AWS_REGION` | `eu-west-1` | AWS region for Bedrock |
-| `HYGIENE_BEDROCK_MODEL_ID` | `anthropic.claude-sonnet-4-20250514` | Bedrock model to use |
+| `HYGIENE_BEDROCK_MODEL_ID` | `anthropic.claude-3-5-sonnet-20241022-v2:0` | Bedrock Claude model to use |
 | `HYGIENE_MAX_FRAMES` | `20` | Max one-frame-per-second samples to extract from video |
+| `HYGIENE_USE_MOCK` | `false` | Set to `true` to return dummy JSON without calling Bedrock |
 
 ## Running the App
 
