@@ -18,12 +18,23 @@ export function AlertCard({ alert, isSelected, onClick }: AlertCardProps) {
           : 'bg-white border-[#cccccc] hover:border-[#aaaaaa] hover:bg-[#f8fbff]',
       ].join(' ')}
     >
-      <div className="flex items-center gap-[5px] w-full mb-[5px]">
+      <div className="flex items-center gap-[8px] w-full mb-[5px]">
         <span
           className="flex-1 min-w-0 text-[16px] text-black tracking-[0.15px] truncate"
           style={{ fontFamily: 'Geist, sans-serif', fontWeight: 500 }}
         >
           {alert.auditType}
+        </span>
+        <span
+          className={[
+            'shrink-0 text-[12px] px-2 py-[2px] rounded-full border whitespace-nowrap',
+            alert.events.length > 0
+              ? 'bg-[#ffebeb] text-[#cc2121] border-[#cc2121]'
+              : 'bg-[#e6f6ee] text-[#0f7a5c] border-[#0f7a5c]',
+          ].join(' ')}
+          style={{ fontFamily: 'Geist, sans-serif', fontWeight: 500 }}
+        >
+          {alert.events.length > 0 ? 'Non-compliant' : 'Compliant'}
         </span>
         <span
           className="shrink-0 text-[12px] text-[rgba(0,0,0,0.87)] tracking-[0.4px]"

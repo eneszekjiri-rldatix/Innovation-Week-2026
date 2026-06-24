@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { TopBar } from '../components/TopBar'
 import { getAudit, updateAudit, videoUrl } from '../api/client'
+import { averageConfidencePercent, isOverallCompliant } from '../api/mappers'
 import type { AnswerValue, AuditDetail } from '../types/api'
 
 export const Route = createFileRoute('/_main/audits/$datetime')({
@@ -23,6 +24,20 @@ function StatusBadge({ value }: { value: string | null }) {
       className={`shrink-0 text-[12px] px-2 py-[2px] rounded-full border whitespace-nowrap ${style.className}`}
     >
       {style.label}
+    </span>
+  )
+}
+
+function OverallComplianceBadge({ compliant }: { compliant: boolean }) {
+  const className = compliant
+    ? 'bg-[#e6f6ee] text-[#0f7a5c] border-[#0f7a5c]'
+    : 'bg-[#ffebeb] text-[#cc2121] border-[#cc2121]'
+  return (
+    <span
+      className={`shrink-0 text-[14px] px-3 py-1 rounded-full border whitespace-nowrap ${className}`}
+      style={{ fontWeight: 600 }}
+    >
+      {compliant ? 'Overall: Compliant' : 'Overall: Not compliant'}
     </span>
   )
 }
@@ -112,6 +127,8 @@ function AuditPage() {
             {detail?.unit}
           </span>
 
+          {detail && <OverallComplianceBadge compliant={isOverallCompliant(detail.questions)} />}
+
           {editing ? (
             <>
               <button
@@ -145,7 +162,7 @@ function AuditPage() {
             className="shrink-0 h-[28px] px-2 py-1 rounded-[8px] border border-[#1f4cb3] text-[#1f4cb3] text-[14px] leading-[1.2] bg-transparent hover:bg-[#e8eeff] transition-colors"
             style={{ fontWeight: 400 }}
           >
-            Back to Alerts
+            Back to Home
           </button>
         </div>
 
@@ -211,6 +228,27 @@ function AuditPage() {
                 </div>
               ))
             )}
+
+            {detail &&
+              (() => {
+                const overall = averageConfidencePercent(detail.questions)
+                if (overall == null) return null
+                return (
+                  <div className="px-4 py-4 border-t border-[#e5e8e8] bg-[#fff5f5]">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[16px] text-[#cc2121]" style={{ fontWeight: 700 }}>
+                        Overall confidence
+                      </span>
+                      <span className="text-[20px] text-[#cc2121]" style={{ fontWeight: 700 }}>
+                        {overall}%
+                      </span>
+                    </div>
+                    <div className="w-full h-[8px] rounded-full bg-[#ffe0e0] overflow-hidden">
+                      <div className="h-full bg-[#cc2121]" style={{ width: `${overall}%` }} />
+                    </div>
+                  </div>
+                )
+              })()}
           </div>
         </div>
       </div>
