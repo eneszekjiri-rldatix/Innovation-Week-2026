@@ -13,6 +13,7 @@ import {
 import { Button } from '@rld-engineering/base-camp-react'
 import { TopBar } from '../components/TopBar'
 import { getAudit, updateAudit, videoUrl } from '../api/client'
+import { averageConfidencePercent, isOverallCompliant } from '../api/mappers'
 import type { AnswerValue, AuditDetail } from '../types/api'
 
 export const Route = createFileRoute('/_main/audits/$datetime')({
@@ -39,6 +40,20 @@ function StatusBadge({ value }: { value: string | null }) {
       variant="outlined"
       sx={{ flexShrink: 0, fontSize: 12, height: 22 }}
     />
+  )
+}
+
+function OverallComplianceBadge({ compliant }: { compliant: boolean }) {
+  const className = compliant
+    ? 'bg-[#e6f6ee] text-[#0f7a5c] border-[#0f7a5c]'
+    : 'bg-[#ffebeb] text-[#cc2121] border-[#cc2121]'
+  return (
+    <span
+      className={`shrink-0 text-[14px] px-3 py-1 rounded-full border whitespace-nowrap ${className}`}
+      style={{ fontWeight: 600 }}
+    >
+      {compliant ? 'Overall: Compliant' : 'Overall: Not compliant'}
+    </span>
   )
 }
 
@@ -129,6 +144,8 @@ function AuditPage() {
             {detail?.unit}
           </Typography>
 
+          {detail && <OverallComplianceBadge compliant={isOverallCompliant(detail.questions)} />}
+
           {editing ? (
             <>
               <Button label="Cancel" variant="outlined" size="small" disabled={saving} onClick={cancelEditing} />
@@ -160,6 +177,12 @@ function AuditPage() {
               overflow: 'hidden',
             }}
           >
+            Back to Home
+          </button>
+        </div>
+
+        <div className="flex px-3 pb-6 gap-0" style={{ height: 'calc(100vh - 44px - 56px)' }}>
+          <div className="w-2/3 flex items-center justify-center bg-[#151d1e] rounded-l-[12px] border border-[#c1cacb] overflow-hidden">
             {detail?.has_video ? (
               <video src={videoUrl(auditId)} controls style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             ) : (
@@ -240,5 +263,30 @@ function AuditPage() {
         </Box>
       </Box>
     </Box>
+
+            {detail &&
+              (() => {
+                const overall = averageConfidencePercent(detail.questions)
+                if (overall == null) return null
+                return (
+                  <div className="px-4 py-4 border-t border-[#e5e8e8] bg-[#fff5f5]">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[16px] text-[#cc2121]" style={{ fontWeight: 700 }}>
+                        Overall confidence
+                      </span>
+                      <span className="text-[20px] text-[#cc2121]" style={{ fontWeight: 700 }}>
+                        {overall}%
+                      </span>
+                    </div>
+                    <div className="w-full h-[8px] rounded-full bg-[#ffe0e0] overflow-hidden">
+                      <div className="h-full bg-[#cc2121]" style={{ width: `${overall}%` }} />
+                    </div>
+                  </div>
+                )
+              })()}
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

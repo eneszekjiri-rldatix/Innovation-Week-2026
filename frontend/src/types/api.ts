@@ -1,14 +1,5 @@
 export type AnswerValue = 'COMPLIANT' | 'NOT_COMPLIANT' | 'NOT_APPLICABLE';
 
-export interface AuditSummary {
-  id: string;
-  unit: string;
-  standard_name: string;
-  created_at: string;
-  overall_compliant: boolean;
-  failed_questions: string[];
-}
-
 export interface QuestionAnswer {
   question_id: string;
   short_label: string | null;
@@ -17,6 +8,17 @@ export interface QuestionAnswer {
   value: AnswerValue | null;
   comment: string | null;
   confidence: number | null;
+}
+
+export interface AuditSummary {
+  id: string;
+  unit: string;
+  standard_name: string;
+  created_at: string;
+  overall_compliant: boolean;
+  failed_questions: string[];
+  has_video: boolean;
+  questions: QuestionAnswer[];
 }
 
 export interface AuditDetail {

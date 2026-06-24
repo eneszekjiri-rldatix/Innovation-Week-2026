@@ -14,15 +14,6 @@ from app.db.session import SessionLocal
 router = APIRouter()
 
 
-class AuditSummary(BaseModel):
-    id: str
-    unit: str
-    standard_name: str
-    created_at: datetime
-    overall_compliant: bool
-    failed_questions: list[str]
-
-
 class QuestionAnswer(BaseModel):
     question_id: str
     short_label: str | None
@@ -31,6 +22,17 @@ class QuestionAnswer(BaseModel):
     value: str | None
     comment: str | None
     confidence: float | None
+
+
+class AuditSummary(BaseModel):
+    id: str
+    unit: str
+    standard_name: str
+    created_at: datetime
+    overall_compliant: bool
+    failed_questions: list[str]
+    has_video: bool
+    questions: list[QuestionAnswer]
 
 
 class AuditDetail(BaseModel):
@@ -77,10 +79,25 @@ def _parse_uuid(audit_id: str) -> uuid.UUID:
         raise HTTPException(status_code=404, detail="Audit not found")
 
 
-def _build_detail(audit: Audit) -> AuditDetail:
+def _build_questions(audit: Audit) -> list[QuestionAnswer]:
     answers_by_question = {answer.question_id: answer for answer in audit.answers}
     questions = sorted(audit.standard.questions, key=lambda q: q.sort_order)
 
+    return [
+        QuestionAnswer(
+            question_id=str(question.id),
+            short_label=question.short_label,
+            text=question.text,
+            sort_order=question.sort_order,
+            value=answers_by_question[question.id].value.value if question.id in answers_by_question else None,
+            comment=answers_by_question[question.id].comment if question.id in answers_by_question else None,
+            confidence=answers_by_question[question.id].confidence if question.id in answers_by_question else None,
+        )
+        for question in questions
+    ]
+
+
+def _build_detail(audit: Audit) -> AuditDetail:
     return AuditDetail(
         id=str(audit.id),
         unit=audit.unit,
@@ -89,18 +106,7 @@ def _build_detail(audit: Audit) -> AuditDetail:
         created_at=audit.created_at,
         completed_at=audit.completed_at,
         has_video=bool(audit.video_path),
-        questions=[
-            QuestionAnswer(
-                question_id=str(question.id),
-                short_label=question.short_label,
-                text=question.text,
-                sort_order=question.sort_order,
-                value=answers_by_question[question.id].value.value if question.id in answers_by_question else None,
-                comment=answers_by_question[question.id].comment if question.id in answers_by_question else None,
-                confidence=answers_by_question[question.id].confidence if question.id in answers_by_question else None,
-            )
-            for question in questions
-        ],
+        questions=_build_questions(audit),
     )
 
 
@@ -110,7 +116,10 @@ def list_audits():
         audits = (
             db.execute(
                 select(Audit)
-                .options(joinedload(Audit.standard), joinedload(Audit.answers).joinedload(Answer.question))
+                .options(
+                    joinedload(Audit.standard).joinedload(Standard.questions),
+                    joinedload(Audit.answers).joinedload(Answer.question),
+                )
                 .order_by(Audit.created_at.desc())
             )
             .unique()
@@ -133,6 +142,8 @@ def list_audits():
                     created_at=audit.created_at,
                     overall_compliant=not failed,
                     failed_questions=failed,
+                    has_video=bool(audit.video_path),
+                    questions=_build_questions(audit),
                 )
             )
         return summaries

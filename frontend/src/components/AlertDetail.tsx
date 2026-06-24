@@ -3,41 +3,34 @@ import { Box, Typography } from '@mui/material';
 import { Button } from '@rld-engineering/base-camp-react';
 import type { Alert, Standard } from '../types/alerts';
 import type { ChartSeries } from './ComplianceChart';
-import { getAudit, getTrend } from '../api/client';
+import { getAudit } from '../api/client';
 import { auditDetailToStandards } from '../api/mappers';
 import { SectionTitle } from './SectionTitle';
 import { ComplianceChart } from './ComplianceChart';
 
-const TREND_COLORS = ['#3870F2', '#0FAB85', '#8C59F7', '#E0850F', '#D52020', '#14716D'];
-
 interface AlertDetailProps {
   alert: Alert;
   onOpenAudit: () => void;
+  trendSeries: ChartSeries[];
+  trendUnitLabel: string;
 }
 
 export function AlertDetail({ alert, onOpenAudit }: AlertDetailProps) {
   const [series, setSeries] = useState<ChartSeries[]>([]);
-  const [standards, setStandards] = useState<Standard[]>([]);
+function OutlineButton({ label, onClick }: { label: string; onClick?: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className="h-[28px] px-2 py-1 rounded-[8px] border border-[#1f4cb3] text-[#1f4cb3] text-[14px] leading-[1.2] bg-transparent hover:bg-[#e8eeff] transition-colors"
+      style={{ fontFamily: 'Geist, sans-serif', fontWeight: 400 }}
+    >
+      {label}
+    </button>
+  );
+}
 
-  useEffect(() => {
-    let cancelled = false;
-    getTrend(alert.unit)
-      .then((trend) => {
-        if (cancelled) return;
-        setSeries(
-          trend.series.map((s, i) => ({
-            key: s.question_id,
-            label: s.short_label ?? s.question_id,
-            color: TREND_COLORS[i % TREND_COLORS.length],
-            points: s.points.map((p) => ({ date: p.date, value: p.percent_compliant })),
-          }))
-        );
-      })
-      .catch(() => setSeries([]));
-    return () => {
-      cancelled = true;
-    };
-  }, [alert.unit]);
+export function AlertDetail({ alert, onOpenAudit, trendSeries, trendUnitLabel }: AlertDetailProps) {
+  const [standards, setStandards] = useState<Standard[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -59,8 +52,12 @@ export function AlertDetail({ alert, onOpenAudit }: AlertDetailProps) {
         <Button label="Open Audit" variant="outlined" onClick={onOpenAudit} />
         <Button label="Create Finding" variant="outlined" />
       </Box>
+      <div className="flex gap-2 items-center">
+        <OutlineButton label="Open Audit" onClick={onOpenAudit} />
+      </div>
 
-      <ComplianceChart series={series} />
+      <SectionTitle title="Compliance trend" subtitle={trendUnitLabel} />
+      <ComplianceChart series={trendSeries} />
 
       <SectionTitle title="Standards" />
 
