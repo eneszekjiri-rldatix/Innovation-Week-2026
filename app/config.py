@@ -8,6 +8,7 @@ load_dotenv()
 
 
 class Settings(BaseSettings):
+    database_url: str = "postgresql+psycopg://audit:audit@localhost:5433/audit"
     aws_region: str = "eu-west-1"
     bedrock_model_id: str = "anthropic.claude-3-5-sonnet-20241022-v2:0"
     max_frames: int = 20
