@@ -1,14 +1,11 @@
-import shutil
-import uuid
 from pathlib import Path
 
 from fastapi import FastAPI, UploadFile, HTTPException
-from fastapi.responses import JSONResponse
 
-from app.config import settings
 from app.models import AnalysisResponse, HygieneAuditResult
 from app.services.video_processor import extract_frames
 from app.services.analysis import analyze_hand_hygiene, save_result
+from app.services.upload_storage import save_uploaded_video
 
 app = FastAPI(
     title="Hand Hygiene Audit API",
@@ -33,14 +30,10 @@ async def analyze_video(video: UploadFile):
             detail=f"Unsupported file format '{file_ext}'. Allowed: {', '.join(allowed_extensions)}",
         )
 
-    video_id = str(uuid.uuid4())
-    video_path = settings.upload_dir / f"{video_id}{file_ext}"
-
     try:
-        with open(video_path, "wb") as f:
-            shutil.copyfileobj(video.file, f)
+        saved_video_path = save_uploaded_video(video.file, video.filename)
 
-        frames = extract_frames(video_path)
+        frames = extract_frames(saved_video_path)
 
         result = await analyze_hand_hygiene(frames, video.filename)
 
@@ -52,9 +45,6 @@ async def analyze_video(video: UploadFile):
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
-    finally:
-        if video_path.exists():
-            video_path.unlink()
 
 
 @app.get("/results", response_model=list[HygieneAuditResult])

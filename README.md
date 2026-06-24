@@ -59,6 +59,7 @@ HYGIENE_USE_MOCK=true
 | `HYGIENE_AWS_REGION` | `eu-west-1` | AWS region for Bedrock |
 | `HYGIENE_BEDROCK_MODEL_ID` | `global.amazon.nova-2-lite-v1:0` | Bedrock model to use |
 | `HYGIENE_MAX_FRAMES` | `20` | Max one-frame-per-second samples to extract from video |
+| `HYGIENE_SAVED_VIDEOS_DIR` | Desktop `Hand Hygiene Audit Videos` folder | Folder where uploaded videos are saved locally |
 | `HYGIENE_USE_MOCK` | `false` | Set to `true` to return dummy JSON without calling Bedrock |
 | `HYGIENE_INPUT_TOKEN_PRICE_PER_1K_USD` | `0.0008` | Estimated input token price per 1K tokens |
 | `HYGIENE_OUTPUT_TOKEN_PRICE_PER_1K_USD` | `0.004` | Estimated output token price per 1K tokens |

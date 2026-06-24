@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     bedrock_model_id: str = "global.amazon.nova-2-lite-v1:0"
     max_frames: int = 20
     upload_dir: Path = Path("uploads")
+    saved_videos_dir: Path = Path.home() / "Desktop" / "Hand Hygiene Audit Videos"
     results_dir: Path = Path("results")
     use_mock: bool = False
     input_token_price_per_1k_usd: float = 0.0008
@@ -23,4 +24,5 @@ class Settings(BaseSettings):
 
 settings = Settings()
 settings.upload_dir.mkdir(parents=True, exist_ok=True)
+settings.saved_videos_dir.mkdir(parents=True, exist_ok=True)
 settings.results_dir.mkdir(parents=True, exist_ok=True)
