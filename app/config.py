@@ -8,6 +8,7 @@ load_dotenv()
 
 
 class Settings(BaseSettings):
+    database_url: str = "postgresql+psycopg://audit:audit@localhost:5433/audit"
     aws_region: str = "eu-west-1"
     bedrock_model_id: str = "global.amazon.nova-2-lite-v1:0"
     max_frames: int = 20
