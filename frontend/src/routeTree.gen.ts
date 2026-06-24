@@ -11,7 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as MainRouteImport } from './routes/_main'
 import { Route as MainIndexRouteImport } from './routes/_main.index'
-import { Route as MainEditAuditAuditIdRouteImport } from './routes/_main.edit-audit.$auditId'
+import { Route as MainUploadRouteImport } from './routes/_main.upload'
 import { Route as MainAuditsDatetimeRouteImport } from './routes/_main.audits.$datetime'
 
 const MainRoute = MainRouteImport.update({
@@ -23,9 +23,9 @@ const MainIndexRoute = MainIndexRouteImport.update({
   path: '/',
   getParentRoute: () => MainRoute,
 } as any)
-const MainEditAuditAuditIdRoute = MainEditAuditAuditIdRouteImport.update({
-  id: '/edit-audit/$auditId',
-  path: '/edit-audit/$auditId',
+const MainUploadRoute = MainUploadRouteImport.update({
+  id: '/upload',
+  path: '/upload',
   getParentRoute: () => MainRoute,
 } as any)
 const MainAuditsDatetimeRoute = MainAuditsDatetimeRouteImport.update({
@@ -36,32 +36,32 @@ const MainAuditsDatetimeRoute = MainAuditsDatetimeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof MainIndexRoute
+  '/upload': typeof MainUploadRoute
   '/audits/$datetime': typeof MainAuditsDatetimeRoute
-  '/edit-audit/$auditId': typeof MainEditAuditAuditIdRoute
 }
 export interface FileRoutesByTo {
+  '/upload': typeof MainUploadRoute
   '/': typeof MainIndexRoute
   '/audits/$datetime': typeof MainAuditsDatetimeRoute
-  '/edit-audit/$auditId': typeof MainEditAuditAuditIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_main': typeof MainRouteWithChildren
+  '/_main/upload': typeof MainUploadRoute
   '/_main/': typeof MainIndexRoute
   '/_main/audits/$datetime': typeof MainAuditsDatetimeRoute
-  '/_main/edit-audit/$auditId': typeof MainEditAuditAuditIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/audits/$datetime' | '/edit-audit/$auditId'
+  fullPaths: '/' | '/upload' | '/audits/$datetime'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/audits/$datetime' | '/edit-audit/$auditId'
+  to: '/upload' | '/' | '/audits/$datetime'
   id:
     | '__root__'
     | '/_main'
+    | '/_main/upload'
     | '/_main/'
     | '/_main/audits/$datetime'
-    | '/_main/edit-audit/$auditId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -84,11 +84,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainIndexRouteImport
       parentRoute: typeof MainRoute
     }
-    '/_main/edit-audit/$auditId': {
-      id: '/_main/edit-audit/$auditId'
-      path: '/edit-audit/$auditId'
-      fullPath: '/edit-audit/$auditId'
-      preLoaderRoute: typeof MainEditAuditAuditIdRouteImport
+    '/_main/upload': {
+      id: '/_main/upload'
+      path: '/upload'
+      fullPath: '/upload'
+      preLoaderRoute: typeof MainUploadRouteImport
       parentRoute: typeof MainRoute
     }
     '/_main/audits/$datetime': {
@@ -102,15 +102,15 @@ declare module '@tanstack/react-router' {
 }
 
 interface MainRouteChildren {
+  MainUploadRoute: typeof MainUploadRoute
   MainIndexRoute: typeof MainIndexRoute
   MainAuditsDatetimeRoute: typeof MainAuditsDatetimeRoute
-  MainEditAuditAuditIdRoute: typeof MainEditAuditAuditIdRoute
 }
 
 const MainRouteChildren: MainRouteChildren = {
+  MainUploadRoute: MainUploadRoute,
   MainIndexRoute: MainIndexRoute,
   MainAuditsDatetimeRoute: MainAuditsDatetimeRoute,
-  MainEditAuditAuditIdRoute: MainEditAuditAuditIdRoute,
 }
 
 const MainRouteWithChildren = MainRoute._addFileChildren(MainRouteChildren)

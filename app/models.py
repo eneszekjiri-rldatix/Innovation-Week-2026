@@ -48,3 +48,4 @@ class HygieneAuditResult(BaseModel):
 class AnalysisResponse(BaseModel):
     status: str = "success"
     result: HygieneAuditResult
+    audit_id: str

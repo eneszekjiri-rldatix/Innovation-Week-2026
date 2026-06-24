@@ -40,7 +40,14 @@ export function AlertCard({ alert, isSelected, onClick }: AlertCardProps) {
         {alert.unit}
       </p>
 
-      {alert.events.length === 1 ? (
+      {alert.events.length === 0 ? (
+        <p
+          className="text-[14px] text-[#0f7a5c] tracking-[0.17px] leading-[1.43]"
+          style={{ fontFamily: 'Geist, sans-serif', fontWeight: 400 }}
+        >
+          No issues found
+        </p>
+      ) : alert.events.length === 1 ? (
         <p
           className="text-[14px] text-[rgba(0,0,0,0.6)] tracking-[0.17px] leading-[1.43]"
           style={{ fontFamily: 'Geist, sans-serif', fontWeight: 400 }}

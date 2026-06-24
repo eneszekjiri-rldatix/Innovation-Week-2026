@@ -1,11 +1,16 @@
 from pathlib import Path
 
-from fastapi import FastAPI, UploadFile, HTTPException
+from fastapi import FastAPI, Form, UploadFile, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 
+from app.config import settings
+from app.db.crud import persist_audit_result
+from app.db.session import SessionLocal
 from app.models import AnalysisResponse, HygieneAuditResult
+from app.routers.audits import router as audits_router
 from app.services.video_processor import extract_frames
 from app.services.analysis import analyze_hand_hygiene, save_result
-from app.services.upload_storage import save_uploaded_video
+from app.services.upload_storage import ensure_browser_playable, save_uploaded_video
 
 app = FastAPI(
     title="Hand Hygiene Audit API",
@@ -13,12 +18,21 @@ app = FastAPI(
     version="1.0.0",
 )
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(audits_router)
+
 
 @app.post("/analyze", response_model=AnalysisResponse)
-async def analyze_video(video: UploadFile):
+async def analyze_video(video: UploadFile, unit: str = Form(default="")):
     """
     Upload a video of a hand washing procedure and receive a compliance audit result.
-    
+
     Supported formats: mp4, avi, mov, mkv
     """
     allowed_extensions = {".mp4", ".avi", ".mov", ".mkv", ".webm"}
@@ -37,9 +51,14 @@ async def analyze_video(video: UploadFile):
 
         result = await analyze_hand_hygiene(frames, video.filename)
 
-        save_result(result)
+        playable_video_path = ensure_browser_playable(saved_video_path)
 
-        return AnalysisResponse(status="success", result=result)
+        save_result(result)
+        with SessionLocal() as db:
+            audit = persist_audit_result(db, result, unit=unit, video_path=str(playable_video_path))
+            audit_id = str(audit.id)
+
+        return AnalysisResponse(status="success", result=result, audit_id=audit_id)
 
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
