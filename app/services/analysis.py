@@ -1,5 +1,6 @@
 import json
 import uuid
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -12,6 +13,8 @@ from app.models import (
     ComplianceStatus,
     HygieneAuditResult,
 )
+
+logger = logging.getLogger(__name__)
 
 AUDIT_PROMPT = """You are a hand hygiene compliance auditor. Analyze the following video frames 
 from a hand washing procedure and evaluate compliance against these specific audit criteria:
@@ -101,7 +104,12 @@ async def analyze_hand_hygiene(
 ) -> HygieneAuditResult:
     """
     Send extracted frames to Claude via Bedrock and parse the compliance result.
+    Falls back to mock response when HYGIENE_USE_MOCK=true.
     """
+    if settings.use_mock:
+        logger.info("Using mock analysis (set HYGIENE_USE_MOCK=false to use Bedrock)")
+        return _mock_result(video_filename, len(frames_b64))
+
     llm = ChatBedrock(
         model_id=settings.bedrock_model_id,
         region_name=settings.aws_region,
@@ -145,6 +153,41 @@ async def analyze_hand_hygiene(
     )
 
     return result
+
+
+def _mock_result(video_filename: str, frame_count: int) -> HygieneAuditResult:
+    """Return a mock audit result for testing without Bedrock access."""
+    return HygieneAuditResult(
+        id=str(uuid.uuid4()),
+        timestamp=datetime.now(timezone.utc),
+        video_filename=video_filename,
+        bare_below_elbows=AuditQuestion(
+            question="Staff are 'Bare Below the Elbows'",
+            status=ComplianceStatus.UNABLE_TO_DETERMINE,
+            confidence=0.0,
+            observations=f"[MOCK] Analyzed {frame_count} frames. Replace HYGIENE_USE_MOCK=false in .env to enable real analysis.",
+        ),
+        cuts_covered=AuditQuestion(
+            question="Cuts and grazes are covered with a waterproof plaster",
+            status=ComplianceStatus.UNABLE_TO_DETERMINE,
+            confidence=0.0,
+            observations=f"[MOCK] Analyzed {frame_count} frames. Awaiting Bedrock credentials.",
+        ),
+        correct_technique=AuditQuestion(
+            question="The correct hand hygiene technique is used when washing hands",
+            status=ComplianceStatus.UNABLE_TO_DETERMINE,
+            confidence=0.0,
+            observations=f"[MOCK] Analyzed {frame_count} frames. Awaiting Bedrock credentials.",
+        ),
+        paper_towel_disposal=AuditQuestion(
+            question="Paper towels are disposed of without touching the waste bin lid",
+            status=ComplianceStatus.UNABLE_TO_DETERMINE,
+            confidence=0.0,
+            observations=f"[MOCK] Analyzed {frame_count} frames. Awaiting Bedrock credentials.",
+        ),
+        overall_compliant=False,
+        summary=f"[MOCK RESPONSE] Video '{video_filename}' uploaded successfully and {frame_count} frames extracted. Set HYGIENE_USE_MOCK=false in .env once you have AWS Bedrock access to enable real AI analysis.",
+    )
 
 
 def save_result(result: HygieneAuditResult) -> Path:

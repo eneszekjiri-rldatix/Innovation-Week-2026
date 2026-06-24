@@ -1,9 +1,9 @@
 import cv2
 import base64
-import tempfile
 from pathlib import Path
 
 from app.config import settings
+from app.services.frame_sampling import one_frame_per_second_timestamps
 
 
 def extract_frames(video_path: Path) -> list[str]:
@@ -15,26 +15,25 @@ def extract_frames(video_path: Path) -> list[str]:
     if not cap.isOpened():
         raise ValueError(f"Could not open video file: {video_path}")
 
-    fps = cap.get(cv2.CAP_PROP_FPS)
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    frame_interval = int(fps * settings.frame_interval_seconds)
+    fps = cap.get(cv2.CAP_PROP_FPS)
 
-    if frame_interval < 1:
-        frame_interval = 1
+    if fps <= 0 or total_frames <= 0:
+        cap.release()
+        raise ValueError("Could not read video duration or frame rate")
 
+    duration_seconds = total_frames / fps
+    samples = one_frame_per_second_timestamps(duration_seconds, settings.max_frames)
     frames_b64: list[str] = []
-    frame_idx = 0
 
-    while cap.isOpened() and len(frames_b64) < settings.max_frames:
+    for sample in samples:
+        cap.set(cv2.CAP_PROP_POS_MSEC, sample.timestamp_seconds * 1000)
         ret, frame = cap.read()
         if not ret:
-            break
+            continue
 
-        if frame_idx % frame_interval == 0:
-            _, buffer = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
-            frames_b64.append(base64.b64encode(buffer).decode("utf-8"))
-
-        frame_idx += 1
+        _, buffer = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+        frames_b64.append(base64.b64encode(buffer).decode("utf-8"))
 
     cap.release()
 

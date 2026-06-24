@@ -48,8 +48,7 @@ You need Bedrock model access enabled for Claude in your AWS account.
 |----------|---------|-------------|
 | `HYGIENE_AWS_REGION` | `eu-west-1` | AWS region for Bedrock |
 | `HYGIENE_BEDROCK_MODEL_ID` | `anthropic.claude-sonnet-4-20250514` | Bedrock model to use |
-| `HYGIENE_MAX_FRAMES` | `20` | Max frames to extract from video |
-| `HYGIENE_FRAME_INTERVAL_SECONDS` | `1.0` | Seconds between frame captures |
+| `HYGIENE_MAX_FRAMES` | `20` | Max one-frame-per-second samples to extract from video |
 
 ## Running the App
 
@@ -132,7 +131,8 @@ Health check endpoint.
 │   ├── models.py            # Pydantic data models
 │   └── services/
 │       ├── __init__.py
-│       ├── video_processor.py  # Frame extraction from video
+│       ├── frame_sampling.py   # One-frame-per-second sampling algorithm
+│       ├── video_processor.py  # Frame extraction and image encoding
 │       └── analysis.py         # LangChain + Bedrock analysis
 ├── results/                 # Saved JSON audit results
 ├── uploads/                 # Temporary video uploads
