@@ -9,11 +9,13 @@ load_dotenv()
 
 class Settings(BaseSettings):
     aws_region: str = "eu-west-1"
-    bedrock_model_id: str = "anthropic.claude-3-5-sonnet-20241022-v2:0"
+    bedrock_model_id: str = "global.amazon.nova-2-lite-v1:0"
     max_frames: int = 20
     upload_dir: Path = Path("uploads")
     results_dir: Path = Path("results")
     use_mock: bool = False
+    input_token_price_per_1k_usd: float = 0.0008
+    output_token_price_per_1k_usd: float = 0.004
 
     model_config = {"env_prefix": "HYGIENE_", "env_file": ".env", "extra": "ignore"}
 

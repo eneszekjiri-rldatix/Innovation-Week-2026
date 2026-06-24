@@ -1,6 +1,6 @@
 # Hand Hygiene Audit API
 
-AI-powered hand hygiene compliance checker that analyzes videos of hand washing procedures against hygiene audit standards using AWS Bedrock (Claude).
+AI-powered hand hygiene compliance checker that analyzes videos of hand washing procedures against hygiene audit standards using AWS Bedrock.
 
 ## Audit Criteria
 
@@ -44,7 +44,7 @@ AWS_SECRET_ACCESS_KEY=<INSERT AWS SECRET ACCESS KEY HERE>
 
 The app loads these values automatically and uses `boto3` through LangChain's `ChatBedrock` integration.
 
-You need Bedrock model access enabled for Claude in your AWS account.
+You need Bedrock model access enabled in your AWS account.
 
 For local upload testing without calling Bedrock, set:
 
@@ -57,9 +57,11 @@ HYGIENE_USE_MOCK=true
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `HYGIENE_AWS_REGION` | `eu-west-1` | AWS region for Bedrock |
-| `HYGIENE_BEDROCK_MODEL_ID` | `anthropic.claude-3-5-sonnet-20241022-v2:0` | Bedrock Claude model to use |
+| `HYGIENE_BEDROCK_MODEL_ID` | `global.amazon.nova-2-lite-v1:0` | Bedrock model to use |
 | `HYGIENE_MAX_FRAMES` | `20` | Max one-frame-per-second samples to extract from video |
 | `HYGIENE_USE_MOCK` | `false` | Set to `true` to return dummy JSON without calling Bedrock |
+| `HYGIENE_INPUT_TOKEN_PRICE_PER_1K_USD` | `0.0008` | Estimated input token price per 1K tokens |
+| `HYGIENE_OUTPUT_TOKEN_PRICE_PER_1K_USD` | `0.004` | Estimated output token price per 1K tokens |
 
 ## Running the App
 
@@ -90,6 +92,15 @@ curl -X POST http://localhost:8000/analyze \
     "id": "550e8400-e29b-41d4-a716-446655440000",
     "timestamp": "2026-06-23T12:00:00Z",
     "video_filename": "handwashing_video.mp4",
+    "ai_agent": "global.amazon.nova-2-lite-v1:0",
+    "usage": {
+      "input_tokens": 18432,
+      "output_tokens": 612,
+      "total_tokens": 19044,
+      "input_cost_per_1k_usd": 0.0008,
+      "output_cost_per_1k_usd": 0.004,
+      "estimated_cost_usd": 0.01719
+    },
     "bare_below_elbows": {
       "question": "Staff are 'Bare Below the Elbows'",
       "status": "compliant",

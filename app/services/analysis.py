@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 import os
@@ -5,6 +6,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+import boto3
 from langchain_core.messages import HumanMessage
 from langchain_aws import ChatBedrock
 
@@ -13,6 +15,7 @@ from app.models import (
     AuditQuestion,
     ComplianceStatus,
     HygieneAuditResult,
+    TokenUsage,
 )
 
 logger = logging.getLogger(__name__)
@@ -96,6 +99,24 @@ def _build_message_content(frames_b64: list[str]) -> list[dict]:
     return content
 
 
+def _build_converse_content(frames_b64: list[str]) -> list[dict]:
+    """Build a Bedrock Converse message for models such as Amazon Nova."""
+    content: list[dict] = [{"text": AUDIT_PROMPT}]
+
+    for index, frame in enumerate(frames_b64, start=1):
+        content.append({"text": f"Sampled video frame {index}:"})
+        content.append(
+            {
+                "image": {
+                    "format": "jpeg",
+                    "source": {"bytes": base64.b64decode(frame)},
+                }
+            }
+        )
+
+    return content
+
+
 def _response_content_to_text(content: str | list[dict]) -> str:
     """Normalize LangChain response content into plain text."""
     if isinstance(content, str):
@@ -120,6 +141,12 @@ def _parse_response(raw_content: str | list[dict]) -> dict:
     return json.loads(text)
 
 
+def _converse_response_to_text(response: dict) -> str:
+    """Extract plain text from a Bedrock Converse response."""
+    content = response.get("output", {}).get("message", {}).get("content", [])
+    return "\n".join(block.get("text", "") for block in content if "text" in block)
+
+
 def _aws_credentials_look_configured() -> bool:
     """Catch obvious placeholder credentials before calling Bedrock."""
     access_key = os.getenv("AWS_ACCESS_KEY_ID", "")
@@ -132,11 +159,72 @@ def _aws_credentials_look_configured() -> bool:
     )
 
 
+def _build_usage(
+    input_tokens: int,
+    output_tokens: int,
+    total_tokens: int | None = None,
+) -> TokenUsage:
+    if total_tokens is None:
+        total_tokens = input_tokens + output_tokens
+
+    estimated_cost = (
+        (input_tokens / 1000) * settings.input_token_price_per_1k_usd
+        + (output_tokens / 1000) * settings.output_token_price_per_1k_usd
+    )
+
+    return TokenUsage(
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        total_tokens=total_tokens,
+        input_cost_per_1k_usd=settings.input_token_price_per_1k_usd,
+        output_cost_per_1k_usd=settings.output_token_price_per_1k_usd,
+        estimated_cost_usd=round(estimated_cost, 8),
+    )
+
+
+def _usage_from_response(response) -> TokenUsage:
+    """Build token usage and estimated cost from LangChain/Bedrock metadata."""
+    usage_metadata = getattr(response, "usage_metadata", None) or {}
+    response_usage = getattr(response, "response_metadata", {}).get("usage", {})
+
+    input_tokens = int(
+        usage_metadata.get("input_tokens")
+        or response_usage.get("prompt_tokens")
+        or 0
+    )
+    output_tokens = int(
+        usage_metadata.get("output_tokens")
+        or response_usage.get("completion_tokens")
+        or 0
+    )
+    total_tokens = int(
+        usage_metadata.get("total_tokens")
+        or response_usage.get("total_tokens")
+        or input_tokens + output_tokens
+    )
+
+    return _build_usage(input_tokens, output_tokens, total_tokens)
+
+
+def _usage_from_converse_response(response: dict) -> TokenUsage:
+    """Build token usage and estimated cost from a Bedrock Converse response."""
+    usage = response.get("usage", {})
+    return _build_usage(
+        input_tokens=int(usage.get("inputTokens", 0)),
+        output_tokens=int(usage.get("outputTokens", 0)),
+        total_tokens=int(usage.get("totalTokens", 0)),
+    )
+
+
+def _is_nova_model(model_id: str) -> bool:
+    return "nova" in model_id.lower()
+
+
 async def analyze_hand_hygiene(
     frames_b64: list[str], video_filename: str
 ) -> HygieneAuditResult:
     """
-    Send extracted frames to Claude via Bedrock and parse the compliance result.
+    Send extracted frames to the configured Bedrock model and parse the compliance result.
     Falls back to mock response when HYGIENE_USE_MOCK=true.
     """
     if settings.use_mock:
@@ -149,16 +237,32 @@ async def analyze_hand_hygiene(
             "in .env, then restart the API."
         )
 
-    llm = ChatBedrock(
-        model_id=settings.bedrock_model_id,
-        region_name=settings.aws_region,
-        model_kwargs={"temperature": 0},
-    )
+    if _is_nova_model(settings.bedrock_model_id):
+        client = boto3.client("bedrock-runtime", region_name=settings.aws_region)
+        response = client.converse(
+            modelId=settings.bedrock_model_id,
+            messages=[
+                {
+                    "role": "user",
+                    "content": _build_converse_content(frames_b64),
+                }
+            ],
+            inferenceConfig={"temperature": 0, "maxTokens": 2048},
+        )
+        parsed = _parse_response(_converse_response_to_text(response))
+        usage = _usage_from_converse_response(response)
+    else:
+        llm = ChatBedrock(
+            model_id=settings.bedrock_model_id,
+            region_name=settings.aws_region,
+            model_kwargs={"temperature": 0},
+        )
 
-    message = HumanMessage(content=_build_message_content(frames_b64))
-    response = await llm.ainvoke([message])
+        message = HumanMessage(content=_build_message_content(frames_b64))
+        response = await llm.ainvoke([message])
 
-    parsed = _parse_response(response.content)
+        parsed = _parse_response(response.content)
+        usage = _usage_from_response(response)
 
     def _make_question(key: str, question_text: str) -> AuditQuestion:
         data = parsed[key]
@@ -173,6 +277,8 @@ async def analyze_hand_hygiene(
         id=str(uuid.uuid4()),
         timestamp=datetime.now(timezone.utc),
         video_filename=video_filename,
+        ai_agent=settings.bedrock_model_id,
+        usage=usage,
         bare_below_elbows=_make_question(
             "bare_below_elbows", "Staff are 'Bare Below the Elbows'"
         ),
@@ -201,6 +307,8 @@ def _mock_result(video_filename: str, frame_count: int) -> HygieneAuditResult:
         id=str(uuid.uuid4()),
         timestamp=datetime.now(timezone.utc),
         video_filename=video_filename,
+        ai_agent=f"{settings.bedrock_model_id} (mock)",
+        usage=TokenUsage(),
         bare_below_elbows=AuditQuestion(
             question="Staff are 'Bare Below the Elbows'",
             status=ComplianceStatus.UNABLE_TO_DETERMINE,

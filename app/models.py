@@ -16,10 +16,27 @@ class AuditQuestion(BaseModel):
     observations: str = Field(description="What the AI observed in the video")
 
 
+class TokenUsage(BaseModel):
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
+    input_cost_per_1k_usd: float = 0.0
+    output_cost_per_1k_usd: float = 0.0
+    estimated_cost_usd: float = Field(
+        default=0.0,
+        description="Estimated Bedrock cost in USD based on configured token pricing",
+    )
+
+
 class HygieneAuditResult(BaseModel):
     id: str
     timestamp: datetime
     video_filename: str
+    ai_agent: str = Field(
+        default="unknown",
+        description="The AI model or agent used to produce the audit result",
+    )
+    usage: TokenUsage | None = None
     bare_below_elbows: AuditQuestion
     cuts_covered: AuditQuestion
     correct_technique: AuditQuestion
