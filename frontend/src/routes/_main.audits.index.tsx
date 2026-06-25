@@ -1,5 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import {
+  Box,
+  Typography,
+  Chip,
+  Link,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+} from '@mui/material'
+import { Page, Button } from '@rld-engineering/base-camp-react'
 import { TopBar } from '../components/TopBar'
 import { listAudits, videoUrl } from '../api/client'
 import { averageConfidencePercent, formatDateTimeLabel, isOverallCompliant } from '../api/mappers'
@@ -10,20 +22,21 @@ export const Route = createFileRoute('/_main/audits/')({
 })
 
 function CriterionCell({ value }: { value: AnswerValue | null }) {
-  if (value === 'COMPLIANT') return <span className="text-[#0f7a5c] text-[13px]">✓ Yes</span>
-  if (value === 'NOT_COMPLIANT') return <span className="text-[#cc2121] text-[13px]">✕ No</span>
-  if (value === 'NOT_APPLICABLE') return <span className="text-[#999999] text-[13px]">N/A</span>
-  return <span className="text-[#999999] text-[13px]">—</span>
+  if (value === 'COMPLIANT') return <Typography sx={{ fontSize: 13, color: '#0f7a5c' }}>✓ Yes</Typography>
+  if (value === 'NOT_COMPLIANT') return <Typography sx={{ fontSize: 13, color: '#cc2121' }}>✕ No</Typography>
+  if (value === 'NOT_APPLICABLE') return <Typography sx={{ fontSize: 13, color: '#999999' }}>N/A</Typography>
+  return <Typography sx={{ fontSize: 13, color: '#999999' }}>—</Typography>
 }
 
 function CompliantBadge({ compliant }: { compliant: boolean }) {
-  const className = compliant
-    ? 'bg-[#e6f6ee] text-[#0f7a5c] border-[#0f7a5c]'
-    : 'bg-[#ffebeb] text-[#cc2121] border-[#cc2121]'
   return (
-    <span className={`text-[12px] px-2 py-[2px] rounded-full border whitespace-nowrap ${className}`}>
-      {compliant ? 'Yes' : 'No'}
-    </span>
+    <Chip
+      size="small"
+      variant="outlined"
+      color={compliant ? 'success' : 'error'}
+      label={compliant ? 'Yes' : 'No'}
+      sx={{ fontSize: 12, height: 22, borderRadius: 999 }}
+    />
   )
 }
 
@@ -53,100 +66,97 @@ function AllAuditsPage() {
       .sort((a, b) => a.sort_order - b.sort_order)
   }, [audits])
 
+  const headCellSx = { py: 1, px: 1.5, fontSize: 13, color: '#515757', whiteSpace: 'nowrap' }
+  const bodyCellSx = { py: 1, px: 1.5, fontSize: 13, color: '#000', whiteSpace: 'nowrap' }
+
   return (
-    <div className="min-h-screen bg-white" style={{ fontFamily: 'Geist, sans-serif' }}>
+    <Page queryKey={['audits']} sx={{ minHeight: '100vh', bgcolor: '#fff' }}>
       <TopBar />
 
-      <div className="pt-[44px]">
-        <div className="flex items-center justify-between px-3 py-2 min-h-[56px]">
-          <div className="flex items-baseline gap-2">
-            <h1 className="text-[#151d1e] text-[24px] leading-[1.4]" style={{ fontWeight: 600 }}>
+      <Box sx={{ pt: '44px' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1, minHeight: 56 }}>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+            <Typography component="h1" sx={{ color: '#151d1e', fontSize: 24, lineHeight: 1.4, fontWeight: 600 }}>
               All audits
-            </h1>
-            <span className="text-[14px] text-[rgba(0,0,0,0.62)]">{audits.length} audits</span>
-          </div>
+            </Typography>
+            <Typography sx={{ fontSize: 14, color: 'rgba(0,0,0,0.62)' }}>{audits.length} audits</Typography>
+          </Box>
 
-          <button
-            onClick={() => navigate({ to: '/' })}
-            className="h-[28px] px-2 py-1 rounded-[8px] border border-[#1f4cb3] text-[#1f4cb3] text-[14px] bg-transparent hover:bg-[#e8eeff] transition-colors"
-          >
-            Back to Home
-          </button>
-        </div>
+          <Button label="Back to Home" variant="outlined" onClick={() => navigate({ to: '/' })} />
+        </Box>
 
-        <div className="px-3 pb-6 overflow-x-auto">
+        <Box sx={{ px: 1.5, pb: 3, overflowX: 'auto' }}>
           {loading ? (
-            <p className="text-[14px] text-[rgba(0,0,0,0.5)] p-4">Loading…</p>
+            <Typography sx={{ fontSize: 14, color: 'rgba(0,0,0,0.5)', p: 2 }}>Loading…</Typography>
           ) : audits.length === 0 ? (
-            <p className="text-[14px] text-[rgba(0,0,0,0.5)] p-4">No audits yet.</p>
+            <Typography sx={{ fontSize: 14, color: 'rgba(0,0,0,0.5)', p: 2 }}>No audits yet.</Typography>
           ) : (
-            <table className="w-full border-collapse text-left">
-              <thead>
-                <tr className="border-b border-[#c1cacb]">
-                  <th className="py-2 px-3 text-[13px] text-[#515757] whitespace-nowrap">Audit</th>
-                  <th className="py-2 px-3 text-[13px] text-[#515757] whitespace-nowrap">Unit</th>
-                  <th className="py-2 px-3 text-[13px] text-[#515757] whitespace-nowrap">Video</th>
-                  <th className="py-2 px-3 text-[13px] text-[#515757] whitespace-nowrap">Moment taken</th>
+            <Table size="small" sx={{ width: '100%' }}>
+              <TableHead>
+                <TableRow sx={{ '& td, & th': { borderBottom: '1px solid #c1cacb' } }}>
+                  <TableCell sx={headCellSx}>Audit</TableCell>
+                  <TableCell sx={headCellSx}>Unit</TableCell>
+                  <TableCell sx={headCellSx}>Video</TableCell>
+                  <TableCell sx={headCellSx}>Moment taken</TableCell>
                   {columns.map((c) => (
-                    <th key={c.question_id} className="py-2 px-3 text-[13px] text-[#515757] whitespace-nowrap">
+                    <TableCell key={c.question_id} sx={headCellSx}>
                       {c.short_label ?? c.text}
-                    </th>
+                    </TableCell>
                   ))}
-                  <th className="py-2 px-3 text-[13px] text-[#515757] whitespace-nowrap">Compliant?</th>
-                  <th className="py-2 px-3 text-[13px] text-[#515757] whitespace-nowrap">Confidence</th>
-                </tr>
-              </thead>
-              <tbody>
+                  <TableCell sx={headCellSx}>Compliant?</TableCell>
+                  <TableCell sx={headCellSx}>Confidence</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
                 {audits.map((audit) => {
                   const questionsById = new Map(audit.questions.map((q) => [q.question_id, q]))
                   const confidence = averageConfidencePercent(audit.questions)
                   return (
-                    <tr key={audit.id} className="border-b border-[#e5e8e8] hover:bg-[#f8fbff]">
-                      <td className="py-2 px-3 whitespace-nowrap">
-                        <button
+                    <TableRow key={audit.id} hover sx={{ '& td': { borderBottom: '1px solid #e5e8e8' } }}>
+                      <TableCell sx={bodyCellSx}>
+                        <Link
+                          component="button"
+                          underline="hover"
+                          sx={{ fontSize: 13, color: '#1f4cb3' }}
                           onClick={() => navigate({ to: '/audits/$datetime', params: { datetime: audit.id } })}
-                          className="text-[13px] text-[#1f4cb3] hover:underline"
                         >
                           {audit.id.slice(0, 8)}
-                        </button>
-                      </td>
-                      <td className="py-2 px-3 text-[13px] text-black whitespace-nowrap">{audit.unit || '—'}</td>
-                      <td className="py-2 px-3 whitespace-nowrap">
+                        </Link>
+                      </TableCell>
+                      <TableCell sx={bodyCellSx}>{audit.unit || '—'}</TableCell>
+                      <TableCell sx={bodyCellSx}>
                         {audit.has_video ? (
-                          <a
+                          <Link
                             href={videoUrl(audit.id)}
                             target="_blank"
                             rel="noreferrer"
-                            className="text-[13px] text-[#1f4cb3] hover:underline"
+                            underline="hover"
+                            sx={{ fontSize: 13, color: '#1f4cb3' }}
                           >
                             View
-                          </a>
+                          </Link>
                         ) : (
-                          <span className="text-[13px] text-[#999999]">—</span>
+                          <Typography sx={{ fontSize: 13, color: '#999999' }}>—</Typography>
                         )}
-                      </td>
-                      <td className="py-2 px-3 text-[13px] text-black whitespace-nowrap">
-                        {formatDateTimeLabel(audit.created_at)}
-                      </td>
+                      </TableCell>
+                      <TableCell sx={bodyCellSx}>{formatDateTimeLabel(audit.created_at)}</TableCell>
                       {columns.map((c) => (
-                        <td key={c.question_id} className="py-2 px-3 whitespace-nowrap">
+                        <TableCell key={c.question_id} sx={bodyCellSx}>
                           <CriterionCell value={questionsById.get(c.question_id)?.value ?? null} />
-                        </td>
+                        </TableCell>
                       ))}
-                      <td className="py-2 px-3 whitespace-nowrap">
+                      <TableCell sx={bodyCellSx}>
                         <CompliantBadge compliant={isOverallCompliant(audit.questions)} />
-                      </td>
-                      <td className="py-2 px-3 text-[13px] text-black whitespace-nowrap">
-                        {confidence != null ? `${confidence}%` : '—'}
-                      </td>
-                    </tr>
+                      </TableCell>
+                      <TableCell sx={bodyCellSx}>{confidence != null ? `${confidence}%` : '—'}</TableCell>
+                    </TableRow>
                   )
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
-        </div>
-      </div>
-    </div>
+        </Box>
+      </Box>
+    </Page>
   )
 }

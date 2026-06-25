@@ -15,20 +15,6 @@ interface AlertDetailProps {
   trendUnitLabel: string;
 }
 
-export function AlertDetail({ alert, onOpenAudit }: AlertDetailProps) {
-  const [series, setSeries] = useState<ChartSeries[]>([]);
-function OutlineButton({ label, onClick }: { label: string; onClick?: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="h-[28px] px-2 py-1 rounded-[8px] border border-[#1f4cb3] text-[#1f4cb3] text-[14px] leading-[1.2] bg-transparent hover:bg-[#e8eeff] transition-colors"
-      style={{ fontFamily: 'Geist, sans-serif', fontWeight: 400 }}
-    >
-      {label}
-    </button>
-  );
-}
-
 export function AlertDetail({ alert, onOpenAudit, trendSeries, trendUnitLabel }: AlertDetailProps) {
   const [standards, setStandards] = useState<Standard[]>([]);
 
@@ -52,9 +38,6 @@ export function AlertDetail({ alert, onOpenAudit, trendSeries, trendUnitLabel }:
         <Button label="Open Audit" variant="outlined" onClick={onOpenAudit} />
         <Button label="Create Finding" variant="outlined" />
       </Box>
-      <div className="flex gap-2 items-center">
-        <OutlineButton label="Open Audit" onClick={onOpenAudit} />
-      </div>
 
       <SectionTitle title="Compliance trend" subtitle={trendUnitLabel} />
       <ComplianceChart series={trendSeries} />

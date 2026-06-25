@@ -1,4 +1,4 @@
-import { Box, Typography, List, ListItem } from '@mui/material';
+import { Box, Typography, List, ListItem, Chip } from '@mui/material';
 import { PageCard, OverflowTooltip } from '@rld-engineering/base-camp-react';
 import type { Alert } from '../types/alerts';
 
@@ -26,7 +26,7 @@ export function AlertCard({ alert, isSelected, onClick }: AlertCardProps) {
           : { borderColor: '#aaaaaa', bgcolor: '#f8fbff' },
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: '5px', width: '100%', mb: '5px' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', mb: '5px' }}>
         <OverflowTooltip
           text={alert.auditType}
           width="100%"
@@ -34,29 +34,14 @@ export function AlertCard({ alert, isSelected, onClick }: AlertCardProps) {
             sx: { flex: 1, minWidth: 0, fontSize: 16, color: '#000', letterSpacing: '0.15px', fontWeight: 500 },
           }}
         />
+        <Chip
+          size="small"
+          variant="outlined"
+          color={alert.events.length > 0 ? 'error' : 'success'}
+          label={alert.events.length > 0 ? 'Non-compliant' : 'Compliant'}
+          sx={{ flexShrink: 0, fontSize: 12, height: 22, fontWeight: 500, borderRadius: 999 }}
+        />
         <Typography sx={{ flexShrink: 0, fontSize: 12, color: 'rgba(0,0,0,0.87)', letterSpacing: '0.4px' }}>
-      <div className="flex items-center gap-[8px] w-full mb-[5px]">
-        <span
-          className="flex-1 min-w-0 text-[16px] text-black tracking-[0.15px] truncate"
-          style={{ fontFamily: 'Geist, sans-serif', fontWeight: 500 }}
-        >
-          {alert.auditType}
-        </span>
-        <span
-          className={[
-            'shrink-0 text-[12px] px-2 py-[2px] rounded-full border whitespace-nowrap',
-            alert.events.length > 0
-              ? 'bg-[#ffebeb] text-[#cc2121] border-[#cc2121]'
-              : 'bg-[#e6f6ee] text-[#0f7a5c] border-[#0f7a5c]',
-          ].join(' ')}
-          style={{ fontFamily: 'Geist, sans-serif', fontWeight: 500 }}
-        >
-          {alert.events.length > 0 ? 'Non-compliant' : 'Compliant'}
-        </span>
-        <span
-          className="shrink-0 text-[12px] text-[rgba(0,0,0,0.87)] tracking-[0.4px]"
-          style={{ fontFamily: 'Geist, sans-serif', fontWeight: 400 }}
-        >
           {alert.date}
         </Typography>
       </Box>

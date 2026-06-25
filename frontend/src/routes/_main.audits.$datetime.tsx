@@ -44,16 +44,13 @@ function StatusBadge({ value }: { value: string | null }) {
 }
 
 function OverallComplianceBadge({ compliant }: { compliant: boolean }) {
-  const className = compliant
-    ? 'bg-[#e6f6ee] text-[#0f7a5c] border-[#0f7a5c]'
-    : 'bg-[#ffebeb] text-[#cc2121] border-[#cc2121]'
   return (
-    <span
-      className={`shrink-0 text-[14px] px-3 py-1 rounded-full border whitespace-nowrap ${className}`}
-      style={{ fontWeight: 600 }}
-    >
-      {compliant ? 'Overall: Compliant' : 'Overall: Not compliant'}
-    </span>
+    <Chip
+      variant="outlined"
+      color={compliant ? 'success' : 'error'}
+      label={compliant ? 'Overall: Compliant' : 'Overall: Not compliant'}
+      sx={{ flexShrink: 0, fontSize: 14, fontWeight: 600, borderRadius: 999 }}
+    />
   )
 }
 
@@ -177,12 +174,6 @@ function AuditPage() {
               overflow: 'hidden',
             }}
           >
-            Back to Home
-          </button>
-        </div>
-
-        <div className="flex px-3 pb-6 gap-0" style={{ height: 'calc(100vh - 44px - 56px)' }}>
-          <div className="w-2/3 flex items-center justify-center bg-[#151d1e] rounded-l-[12px] border border-[#c1cacb] overflow-hidden">
             {detail?.has_video ? (
               <video src={videoUrl(auditId)} controls style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             ) : (
@@ -259,34 +250,37 @@ function AuditPage() {
                 </Box>
               ))
             )}
-          </Box>
-        </Box>
-      </Box>
-    </Box>
 
             {detail &&
               (() => {
                 const overall = averageConfidencePercent(detail.questions)
                 if (overall == null) return null
                 return (
-                  <div className="px-4 py-4 border-t border-[#e5e8e8] bg-[#fff5f5]">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[16px] text-[#cc2121]" style={{ fontWeight: 700 }}>
+                  <Box sx={{ px: 2, py: 2, borderTop: '1px solid #e5e8e8', bgcolor: '#fff5f5' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+                      <Typography sx={{ fontSize: 16, color: '#cc2121', fontWeight: 700 }}>
                         Overall confidence
-                      </span>
-                      <span className="text-[20px] text-[#cc2121]" style={{ fontWeight: 700 }}>
+                      </Typography>
+                      <Typography sx={{ fontSize: 20, color: '#cc2121', fontWeight: 700 }}>
                         {overall}%
-                      </span>
-                    </div>
-                    <div className="w-full h-[8px] rounded-full bg-[#ffe0e0] overflow-hidden">
-                      <div className="h-full bg-[#cc2121]" style={{ width: `${overall}%` }} />
-                    </div>
-                  </div>
+                      </Typography>
+                    </Box>
+                    <LinearProgress
+                      variant="determinate"
+                      value={overall}
+                      sx={{
+                        height: 8,
+                        borderRadius: 999,
+                        bgcolor: '#ffe0e0',
+                        '& .MuiLinearProgress-bar': { bgcolor: '#cc2121' },
+                      }}
+                    />
+                  </Box>
                 )
               })()}
-          </div>
-        </div>
-      </div>
-    </div>
+          </Box>
+        </Box>
+      </Box>
+    </Box>
   )
 }

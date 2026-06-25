@@ -1,17 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Box, Typography, Select, MenuItem, FormControl } from '@mui/material'
+import { Box, Typography, Select, MenuItem, FormControl, Chip } from '@mui/material'
 import { Page, Button } from '@rld-engineering/base-camp-react'
 import { TopBar } from '../components/TopBar'
 import { AlertCard } from '../components/AlertCard'
 import { AlertDetail } from '../components/AlertDetail'
-import { listAudits } from '../api/client'
-import { KNOWN_UNITS } from './_main.upload'
-import { auditSummaryToAlert } from '../api/mappers'
-import type { Alert } from '../types/alerts'
-import type { ChartSeries } from '../components/ComplianceChart'
 import { getTrend, listAudits } from '../api/client'
 import { auditSummaryToAlert, trendToOverallSeries } from '../api/mappers'
+import type { ChartSeries } from '../components/ComplianceChart'
 import type { AuditSummary } from '../types/api'
 
 export const Route = createFileRoute('/_main/')({
@@ -85,52 +81,35 @@ function AlertDashboard() {
 
       <Box sx={{ pt: '44px' }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1, minHeight: 56 }}>
-          <Typography component="h1" sx={{ color: '#151d1e', fontSize: 24, lineHeight: 1.4, fontWeight: 600 }}>
-            Home
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
+            <Typography component="h1" sx={{ color: '#151d1e', fontSize: 24, lineHeight: 1.4, fontWeight: 600 }}>
+              Home
+            </Typography>
+            <Typography sx={{ fontSize: 14, color: 'rgba(0,0,0,0.62)' }}>
+              {unitSummaries.length - filteredAlerts.length}/{unitSummaries.length} audits compliant
+            </Typography>
+            {complianceRate != null && (
+              <Chip
+                size="small"
+                variant="outlined"
+                color={complianceRate >= COMPLIANCE_THRESHOLD ? 'success' : 'error'}
+                label={`${complianceRate}% compliant overall`}
+                sx={{ fontSize: 14, fontWeight: 600, borderRadius: 999 }}
+              />
+            )}
+          </Box>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Button
+              label="All audits"
+              variant="outlined"
+              color="secondary"
+              onClick={() => navigate({ to: '/audits' })}
+            />
             <Button
               label="Upload video"
               variant="outlined"
               color="secondary"
-      <div className="pt-[44px]">
-        <div className="flex items-center justify-between px-3 py-2 min-h-[56px]">
-          <div className="flex items-baseline gap-2">
-            <h1
-              className="text-[#151d1e] text-[24px] leading-[1.4]"
-              style={{ fontWeight: 600 }}
-            >
-              Home
-            </h1>
-            <span className="text-[14px] text-[rgba(0,0,0,0.62)]">
-              {unitSummaries.length - filteredAlerts.length}/{unitSummaries.length} audits compliant
-            </span>
-            {complianceRate != null && (
-              <span
-                className={[
-                  'text-[14px] px-2 py-[2px] rounded-full border whitespace-nowrap',
-                  complianceRate >= COMPLIANCE_THRESHOLD
-                    ? 'bg-[#e6f6ee] text-[#0f7a5c] border-[#0f7a5c]'
-                    : 'bg-[#ffebeb] text-[#cc2121] border-[#cc2121]',
-                ].join(' ')}
-                style={{ fontWeight: 600 }}
-              >
-                {complianceRate}% compliant overall
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => navigate({ to: '/audits' })}
-              className="h-[36px] px-3 rounded-[8px] border border-[#14716d] text-[#14716d] text-[14px] bg-transparent hover:bg-[#eaf5f4] transition-colors"
-              style={{ fontFamily: 'Geist, sans-serif', fontWeight: 400 }}
-            >
-              All audits
-            </button>
-
-            <button
               onClick={() => navigate({ to: '/upload' })}
             />
 
@@ -171,12 +150,6 @@ function AlertDashboard() {
           </Box>
 
           <Box sx={{ width: '66.666%', bgcolor: '#fff', borderRadius: '8px', border: '1px solid #cccccc', overflow: 'hidden' }}>
-            {selectedAlert && <AlertDetail alert={selectedAlert} onOpenAudit={handleOpenAudit} />}
-          </Box>
-        </Box>
-      </Box>
-    </Page>
-          <div className="w-2/3 bg-white rounded-[8px] border border-[#cccccc] overflow-hidden">
             {selectedAlert && (
               <AlertDetail
                 alert={selectedAlert}
@@ -185,9 +158,9 @@ function AlertDashboard() {
                 trendUnitLabel={selectedUnit}
               />
             )}
-          </div>
-        </div>
-      </div>
-    </div>
+          </Box>
+        </Box>
+      </Box>
+    </Page>
   )
 }
