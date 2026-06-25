@@ -13,6 +13,7 @@ import { Route as MainRouteImport } from './routes/_main'
 import { Route as MainIndexRouteImport } from './routes/_main.index'
 import { Route as MainUploadRouteImport } from './routes/_main.upload'
 import { Route as MainScratchDialogTestRouteImport } from './routes/_main.scratch-dialog-test'
+import { Route as MainAlertsRouteImport } from './routes/_main.alerts'
 import { Route as MainAuditsIndexRouteImport } from './routes/_main.audits.index'
 import { Route as MainAuditsDatetimeRouteImport } from './routes/_main.audits.$datetime'
 
@@ -35,6 +36,11 @@ const MainScratchDialogTestRoute = MainScratchDialogTestRouteImport.update({
   path: '/scratch-dialog-test',
   getParentRoute: () => MainRoute,
 } as any)
+const MainAlertsRoute = MainAlertsRouteImport.update({
+  id: '/alerts',
+  path: '/alerts',
+  getParentRoute: () => MainRoute,
+} as any)
 const MainAuditsIndexRoute = MainAuditsIndexRouteImport.update({
   id: '/audits/',
   path: '/audits/',
@@ -48,12 +54,14 @@ const MainAuditsDatetimeRoute = MainAuditsDatetimeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof MainIndexRoute
+  '/alerts': typeof MainAlertsRoute
   '/scratch-dialog-test': typeof MainScratchDialogTestRoute
   '/upload': typeof MainUploadRoute
   '/audits/$datetime': typeof MainAuditsDatetimeRoute
   '/audits/': typeof MainAuditsIndexRoute
 }
 export interface FileRoutesByTo {
+  '/alerts': typeof MainAlertsRoute
   '/scratch-dialog-test': typeof MainScratchDialogTestRoute
   '/upload': typeof MainUploadRoute
   '/': typeof MainIndexRoute
@@ -63,6 +71,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_main': typeof MainRouteWithChildren
+  '/_main/alerts': typeof MainAlertsRoute
   '/_main/scratch-dialog-test': typeof MainScratchDialogTestRoute
   '/_main/upload': typeof MainUploadRoute
   '/_main/': typeof MainIndexRoute
@@ -73,15 +82,23 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/alerts'
     | '/scratch-dialog-test'
     | '/upload'
     | '/audits/$datetime'
     | '/audits/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/scratch-dialog-test' | '/upload' | '/' | '/audits/$datetime' | '/audits'
+  to:
+    | '/alerts'
+    | '/scratch-dialog-test'
+    | '/upload'
+    | '/'
+    | '/audits/$datetime'
+    | '/audits'
   id:
     | '__root__'
     | '/_main'
+    | '/_main/alerts'
     | '/_main/scratch-dialog-test'
     | '/_main/upload'
     | '/_main/'
@@ -123,6 +140,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainScratchDialogTestRouteImport
       parentRoute: typeof MainRoute
     }
+    '/_main/alerts': {
+      id: '/_main/alerts'
+      path: '/alerts'
+      fullPath: '/alerts'
+      preLoaderRoute: typeof MainAlertsRouteImport
+      parentRoute: typeof MainRoute
+    }
     '/_main/audits/': {
       id: '/_main/audits/'
       path: '/audits'
@@ -141,6 +165,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface MainRouteChildren {
+  MainAlertsRoute: typeof MainAlertsRoute
   MainScratchDialogTestRoute: typeof MainScratchDialogTestRoute
   MainUploadRoute: typeof MainUploadRoute
   MainIndexRoute: typeof MainIndexRoute
@@ -149,6 +174,7 @@ interface MainRouteChildren {
 }
 
 const MainRouteChildren: MainRouteChildren = {
+  MainAlertsRoute: MainAlertsRoute,
   MainScratchDialogTestRoute: MainScratchDialogTestRoute,
   MainUploadRoute: MainUploadRoute,
   MainIndexRoute: MainIndexRoute,

@@ -95,7 +95,7 @@ function AllAuditsPage() {
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1, minHeight: 56 }}>
           <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
             <Typography component="h1" sx={{ color: '#151d1e', fontSize: 24, lineHeight: 1.4, fontWeight: 600 }}>
-              All audits
+              All Events
             </Typography>
             <Typography sx={{ fontSize: 14, color: 'rgba(0,0,0,0.62)' }}>{audits.length} audits</Typography>
           </Box>

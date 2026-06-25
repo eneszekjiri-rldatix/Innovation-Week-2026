@@ -62,3 +62,54 @@ export function auditDetailToStandards(detail: AuditDetail): Standard[] {
     .filter((q) => q.value === 'NOT_COMPLIANT')
     .map((q) => ({ metric: q.short_label ?? q.text, description: q.text }));
 }
+
+export type AiInsightSeverity = 'high' | 'medium' | 'low';
+
+export interface AiInsight {
+  id: string;
+  title: string;
+  description: string;
+  severity: AiInsightSeverity;
+}
+
+export function getMockInsights(unit: string, complianceRate: number | null): AiInsight[] {
+  const unitLabel = unit === 'All Units' ? 'across all units' : `in ${unit}`;
+  const rate = complianceRate ?? 0;
+  const belowThreshold = rate < 72;
+
+  const insights: AiInsight[] = [
+    {
+      id: 'compliance-trend',
+      title: belowThreshold ? 'Compliance below target' : 'Compliance on track',
+      description: belowThreshold
+        ? `Overall compliance ${unitLabel} is ${rate}%, below the 72% threshold. Focus on hand hygiene before patient contact.`
+        : `Overall compliance ${unitLabel} is ${rate}%, meeting the 72% target. Continue current practices.`,
+      severity: belowThreshold ? 'high' : 'low',
+    },
+    {
+      id: 'peak-risk',
+      title: 'Peak non-compliance window',
+      description: `AI analysis suggests highest risk periods ${unitLabel} occur during shift handovers (07:00–09:00 and 19:00–21:00).`,
+      severity: 'medium',
+    },
+    {
+      id: 'recommendation',
+      title: 'Recommended action',
+      description: belowThreshold
+        ? `Schedule a targeted refresher session for staff ${unitLabel} on WHO moment 1 (before touching a patient).`
+        : `Maintain audit frequency ${unitLabel}; consider sharing best practices with lower-performing units.`,
+      severity: belowThreshold ? 'medium' : 'low',
+    },
+  ];
+
+  if (unit !== 'All Units') {
+    insights.push({
+      id: 'unit-comparison',
+      title: 'Unit benchmark',
+      description: `${unit} ranks in the ${belowThreshold ? 'lower' : 'upper'} quartile compared to other units this month.`,
+      severity: 'low',
+    });
+  }
+
+  return insights;
+}

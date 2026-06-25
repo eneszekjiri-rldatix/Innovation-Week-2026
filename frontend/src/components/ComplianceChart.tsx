@@ -120,7 +120,7 @@ export function ComplianceChart({ series, thresholdPercent = 72 }: ComplianceCha
         ref={svgRef}
         viewBox={`0 0 ${VW} ${VH}`}
         className="w-full"
-        style={{ aspectRatio: `${VW} / ${VH}`, height: 'auto' }}
+        style={{ width: '100%', height: 'auto', aspectRatio: `${VW} / ${VH}`, maxHeight: 440 }}
         aria-label="Compliance trend chart"
       >
         <rect x={M.left} y={threshY} width={PW} height={bottomY - threshY} fill="rgba(255,222,222,0.4)" />

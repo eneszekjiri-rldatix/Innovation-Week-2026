@@ -226,7 +226,7 @@ function AuditPage() {
             }}
           >
             {detail?.has_video ? (
-              <video src={videoUrl(auditId)} controls style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <video src={videoUrl(auditId)} controls style={{ width: '87%', height: '87%', objectFit: 'contain' }} />
             ) : (
               <Typography sx={{ fontSize: 14, color: 'rgba(255,255,255,0.6)' }}>
                 No video available for this audit.

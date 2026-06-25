@@ -1,6 +1,10 @@
-import { AppBar, Toolbar, Typography, Avatar, Box } from '@mui/material';
+import { AppBar, Toolbar, Typography, Avatar, Box, IconButton } from '@mui/material';
+import NotificationsNoneIcon from '@mui/icons-material/NotificationsNone';
+import { useNavigate } from '@tanstack/react-router';
 
 export function TopBar() {
+  const navigate = useNavigate();
+
   return (
     <AppBar
       position="fixed"
@@ -18,20 +22,29 @@ export function TopBar() {
         <Typography sx={{ color: '#fff', fontSize: 16, letterSpacing: '0.15px' }}>
           Audits and standards
         </Typography>
-        <Box aria-label="User: AS">
-          <Avatar
-            sx={{
-              width: 28,
-              height: 28,
-              bgcolor: '#d3e4d6',
-              border: '1px solid #185956',
-              color: '#0f4146',
-              fontSize: 12,
-              fontWeight: 600,
-            }}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <IconButton
+            aria-label="Alerts"
+            onClick={() => navigate({ to: '/alerts' })}
+            sx={{ color: '#fff', p: 0.5 }}
           >
-            AS
-          </Avatar>
+            <NotificationsNoneIcon sx={{ fontSize: 22 }} />
+          </IconButton>
+          <Box aria-label="User: AS">
+            <Avatar
+              sx={{
+                width: 28,
+                height: 28,
+                bgcolor: '#d3e4d6',
+                border: '1px solid #185956',
+                color: '#0f4146',
+                fontSize: 12,
+                fontWeight: 600,
+              }}
+            >
+              AS
+            </Avatar>
+          </Box>
         </Box>
       </Toolbar>
     </AppBar>

@@ -2,21 +2,17 @@ import { useEffect, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import { Button } from '@rld-engineering/base-camp-react';
 import type { Alert, Standard } from '../types/alerts';
-import type { ChartSeries } from './ComplianceChart';
 import { getAudit } from '../api/client';
 import { auditDetailToStandards } from '../api/mappers';
 import { SectionTitle } from './SectionTitle';
-import { ComplianceChart } from './ComplianceChart';
 import { AddFindingDialog } from './AddFindingDialog';
 
 interface AlertDetailProps {
   alert: Alert;
   onOpenAudit: () => void;
-  trendSeries: ChartSeries[];
-  trendUnitLabel: string;
 }
 
-export function AlertDetail({ alert, onOpenAudit, trendSeries, trendUnitLabel }: AlertDetailProps) {
+export function AlertDetail({ alert, onOpenAudit }: AlertDetailProps) {
   const [standards, setStandards] = useState<Standard[]>([]);
   const [isAddFindingOpen, setIsAddFindingOpen] = useState(false);
 
@@ -46,9 +42,6 @@ export function AlertDetail({ alert, onOpenAudit, trendSeries, trendUnitLabel }:
         onClose={() => setIsAddFindingOpen(false)}
         onSubmit={() => setIsAddFindingOpen(false)}
       />
-
-      <SectionTitle title="Compliance trend" subtitle={trendUnitLabel} />
-      <ComplianceChart series={trendSeries} />
 
       <SectionTitle title="Standards" />
 

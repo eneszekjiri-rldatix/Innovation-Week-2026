@@ -1,35 +1,53 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Box, Typography, Select, MenuItem, FormControl, Chip } from '@mui/material'
-import { Page, Button } from '@rld-engineering/base-camp-react'
+import { Box, Typography, Select, MenuItem, FormControl, Chip, Card, CardContent } from '@mui/material'
+import { Page, PageCard, Button } from '@rld-engineering/base-camp-react'
 import { TopBar } from '../components/TopBar'
-import { AlertCard } from '../components/AlertCard'
-import { AlertDetail } from '../components/AlertDetail'
+import { SectionTitle } from '../components/SectionTitle'
+import { ComplianceChart } from '../components/ComplianceChart'
 import { getTrend, listAudits } from '../api/client'
-import { auditSummaryToAlert, trendToOverallSeries } from '../api/mappers'
+import { getMockInsights, trendToOverallSeries } from '../api/mappers'
+import type { AiInsightSeverity } from '../api/mappers'
 import type { ChartSeries } from '../components/ComplianceChart'
 import type { AuditSummary } from '../types/api'
 
 export const Route = createFileRoute('/_main/')({
-  component: AlertDashboard,
+  component: HomePage,
 })
 
 const COMPLIANCE_THRESHOLD = 72
 
-function AlertDashboard() {
+const DATE_RANGES = [
+  { value: '7', label: 'Last 7 days' },
+  { value: '30', label: 'Last 30 days' },
+  { value: '90', label: 'Last 90 days' },
+  { value: 'all', label: 'All time' },
+] as const
+
+type DateRangeValue = (typeof DATE_RANGES)[number]['value']
+
+function rangeCutoff(range: DateRangeValue): number | null {
+  if (range === 'all') return null
+  const days = Number(range)
+  return Date.now() - days * 24 * 60 * 60 * 1000
+}
+
+const SEVERITY_CHIP: Record<AiInsightSeverity, { label: string; color: 'error' | 'warning' | 'success' }> = {
+  high: { label: 'High', color: 'error' },
+  medium: { label: 'Medium', color: 'warning' },
+  low: { label: 'Low', color: 'success' },
+}
+
+function HomePage() {
   const navigate = useNavigate()
   const [summaries, setSummaries] = useState<AuditSummary[]>([])
-  const [selectedAlertId, setSelectedAlertId] = useState<string | null>(null)
   const [selectedUnit, setSelectedUnit] = useState<string>('All Units')
+  const [dateRange, setDateRange] = useState<DateRangeValue>('30')
   const [trendSeries, setTrendSeries] = useState<ChartSeries[]>([])
 
   useEffect(() => {
     listAudits()
-      .then((data) => {
-        const reviewed = data.filter((s) => s.review_status === 'REVIEWED')
-        setSummaries(reviewed)
-        setSelectedAlertId((current) => current ?? reviewed.find((s) => !s.overall_compliant)?.id ?? null)
-      })
+      .then((data) => setSummaries(data.filter((s) => s.review_status === 'REVIEWED')))
       .catch(() => setSummaries([]))
   }, [])
 
@@ -51,58 +69,46 @@ function AlertDashboard() {
     [summaries]
   )
 
-  const unitSummaries = useMemo(
-    () =>
-      selectedUnit === 'All Units'
-        ? summaries
-        : summaries.filter((s) => (s.unit || 'Unassigned') === selectedUnit),
-    [summaries, selectedUnit]
-  )
+  const unitSummaries = useMemo(() => {
+    const cutoff = rangeCutoff(dateRange)
+    return summaries.filter((s) => {
+      const matchesUnit = selectedUnit === 'All Units' || (s.unit || 'Unassigned') === selectedUnit
+      const matchesRange = cutoff == null || new Date(s.created_at).getTime() >= cutoff
+      return matchesUnit && matchesRange
+    })
+  }, [summaries, selectedUnit, dateRange])
 
-  const filteredAlerts = useMemo(
-    () => unitSummaries.filter((s) => !s.overall_compliant).map(auditSummaryToAlert),
-    [unitSummaries]
-  )
+  const filteredTrendSeries = useMemo(() => {
+    const cutoff = rangeCutoff(dateRange)
+    if (cutoff == null) return trendSeries
+    return trendSeries
+      .map((s) => ({ ...s, points: s.points.filter((p) => new Date(p.date).getTime() >= cutoff) }))
+      .filter((s) => s.points.length > 0)
+  }, [trendSeries, dateRange])
 
   const complianceRate =
     unitSummaries.length === 0
       ? null
       : Math.round((unitSummaries.filter((s) => s.overall_compliant).length / unitSummaries.length) * 100)
 
-  const selectedAlert = filteredAlerts.find((a) => a.id === selectedAlertId) ?? filteredAlerts[0] ?? null
-
-  function handleOpenAudit() {
-    if (!selectedAlert) return
-    navigate({ to: '/audits/$datetime', params: { datetime: selectedAlert.id } })
-  }
+  const insights = useMemo(
+    () => getMockInsights(selectedUnit, complianceRate),
+    [selectedUnit, complianceRate]
+  )
 
   return (
-    <Page queryKey={['audits']} sx={{ minHeight: '100vh', bgcolor: '#fff' }}>
+    <Page queryKey={['audits', 'home']} sx={{ minHeight: '100vh', bgcolor: '#fff' }}>
       <TopBar />
 
-      <Box sx={{ pt: '44px' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 1, minHeight: 56 }}>
-          <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-            <Typography component="h1" sx={{ color: '#151d1e', fontSize: 24, lineHeight: 1.4, fontWeight: 600 }}>
-              Home
-            </Typography>
-            <Typography sx={{ fontSize: 14, color: 'rgba(0,0,0,0.62)' }}>
-              {unitSummaries.length - filteredAlerts.length}/{unitSummaries.length} audits compliant
-            </Typography>
-            {complianceRate != null && (
-              <Chip
-                size="small"
-                variant="outlined"
-                color={complianceRate >= COMPLIANCE_THRESHOLD ? 'success' : 'error'}
-                label={`${complianceRate}% compliant overall`}
-                sx={{ fontSize: 14, fontWeight: 600, borderRadius: 999 }}
-              />
-            )}
-          </Box>
+      <Box sx={{ pt: '44px', display: 'flex', flexDirection: 'column', gap: 1.5, px: { xs: 2, md: 4 }, pb: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5, minHeight: 48 }}>
+          <Typography component="h1" sx={{ color: '#151d1e', fontSize: 24, lineHeight: 1.4, fontWeight: 600 }}>
+            Hand Hygiene Dashboard
+          </Typography>
 
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
             <Button
-              label="All audits"
+              label="View Events"
               variant="outlined"
               color="secondary"
               onClick={() => navigate({ to: '/audits' })}
@@ -113,6 +119,20 @@ function AlertDashboard() {
               color="secondary"
               onClick={() => navigate({ to: '/upload' })}
             />
+
+            <FormControl size="small" sx={{ width: 180 }}>
+              <Select
+                value={dateRange}
+                onChange={(e) => setDateRange(e.target.value as DateRangeValue)}
+                sx={{ fontSize: 14, borderRadius: '8px', bgcolor: '#fff' }}
+              >
+                {DATE_RANGES.map((range) => (
+                  <MenuItem key={range.value} value={range.value} sx={{ fontSize: 14 }}>
+                    {range.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
             <FormControl size="small" sx={{ width: 220 }}>
               <Select
@@ -130,37 +150,79 @@ function AlertDashboard() {
           </Box>
         </Box>
 
-        <Box sx={{ display: 'flex', gap: 1.5, px: 1.5, pb: 1.5, height: 'calc(100vh - 44px - 56px)' }}>
-          <Box sx={{ width: '33.333%', bgcolor: '#fff', borderRadius: '12px', border: '1px solid #c1cacb', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.5, overflowY: 'auto', height: '100%' }}>
-              {filteredAlerts.length === 0 ? (
-                <Typography sx={{ fontSize: 14, color: 'rgba(0,0,0,0.5)', textAlign: 'center', mt: 4 }}>
-                  No alerts for this unit.
+        <PageCard sx={{ width: '100%', p: 1.5 }}>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, alignItems: 'stretch', gap: 1.5 }}>
+            <Card variant="outlined" sx={{ width: { xs: '100%', md: 320 }, flexShrink: 0, borderRadius: '12px' }}>
+              <CardContent>
+                <Typography sx={{ fontSize: 14, fontWeight: 600, color: '#151d1e' }}>
+                  Overall compliance
                 </Typography>
-              ) : (
-                filteredAlerts.map((alert) => (
-                  <AlertCard
-                    key={alert.id}
-                    alert={alert}
-                    isSelected={selectedAlert?.id === alert.id}
-                    onClick={() => setSelectedAlertId(alert.id)}
-                  />
-                ))
-              )}
+                <Typography sx={{ fontSize: 13, color: 'rgba(0,0,0,0.6)', mb: 1 }}>
+                  {selectedUnit}
+                </Typography>
+                <Typography
+                  sx={{
+                    fontSize: 40,
+                    fontWeight: 400,
+                    lineHeight: 1,
+                    color:
+                      complianceRate != null && complianceRate >= COMPLIANCE_THRESHOLD
+                        ? 'success.main'
+                        : 'error.main',
+                  }}
+                >
+                  {complianceRate != null ? `${complianceRate}%` : '—'}
+                </Typography>
+                {unitSummaries.length > 0 && (
+                  <Typography sx={{ fontSize: 14, color: 'rgba(0,0,0,0.6)', mt: 1 }}>
+                    {unitSummaries.filter((s) => s.overall_compliant).length}/{unitSummaries.length} audits compliant
+                  </Typography>
+                )}
+              </CardContent>
+            </Card>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <ComplianceChart series={filteredTrendSeries} />
             </Box>
           </Box>
+        </PageCard>
 
-          <Box sx={{ width: '66.666%', bgcolor: '#fff', borderRadius: '8px', border: '1px solid #cccccc', overflow: 'hidden' }}>
-            {selectedAlert && (
-              <AlertDetail
-                alert={selectedAlert}
-                onOpenAudit={handleOpenAudit}
-                trendSeries={trendSeries}
-                trendUnitLabel={selectedUnit}
-              />
-            )}
+        <PageCard sx={{ width: '100%', p: 1.5 }}>
+          <SectionTitle title="AI insights" subtitle={selectedUnit} />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, mt: 1 }}>
+            {insights.map((insight) => {
+              const chip = SEVERITY_CHIP[insight.severity]
+              return (
+                <Box
+                  key={insight.id}
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 0.5,
+                    pb: 2,
+                    borderBottom: '1px solid #e5e8e8',
+                    '&:last-child': { borderBottom: 'none', pb: 0 },
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography sx={{ fontSize: 16, fontWeight: 600, color: '#151d1e', flex: 1 }}>
+                      {insight.title}
+                    </Typography>
+                    <Chip
+                      size="small"
+                      variant="outlined"
+                      color={chip.color}
+                      label={chip.label}
+                      sx={{ fontSize: 12, height: 22, borderRadius: 999 }}
+                    />
+                  </Box>
+                  <Typography sx={{ fontSize: 14, color: 'rgba(0,0,0,0.7)', lineHeight: 1.5 }}>
+                    {insight.description}
+                  </Typography>
+                </Box>
+              )
+            })}
           </Box>
-        </Box>
+        </PageCard>
       </Box>
     </Page>
   )
