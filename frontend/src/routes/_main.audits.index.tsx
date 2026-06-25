@@ -28,32 +28,21 @@ function CriterionCell({ value }: { value: AnswerValue | null }) {
   return <Typography sx={{ fontSize: 13, color: '#999999' }}>—</Typography>
 }
 
-const REVIEW_CHIP: Record<AuditReviewStatus, { label: string; color: 'success' | 'error' | 'default' }> = {
+const REVIEW_CHIP: Record<AuditReviewStatus, { label: string; color: 'success' | 'default' }> = {
   PENDING: { label: 'Pending', color: 'default' },
-  APPROVED: { label: 'Approved', color: 'success' },
-  REJECTED: { label: 'Rejected', color: 'error' },
+  REVIEWED: { label: 'Reviewed', color: 'success' },
 }
 
-function ReviewCell({ status, edited }: { status: AuditReviewStatus; edited: boolean }) {
+function ReviewCell({ status }: { status: AuditReviewStatus }) {
   const style = REVIEW_CHIP[status]
   return (
-    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-      <Chip
-        size="small"
-        variant="outlined"
-        color={style.color}
-        label={style.label}
-        sx={{ fontSize: 12, height: 22, borderRadius: 999 }}
-      />
-      {edited && (
-        <Chip
-          size="small"
-          variant="filled"
-          label="Edited"
-          sx={{ fontSize: 11, height: 20, bgcolor: '#e3f0ef', color: '#14716d' }}
-        />
-      )}
-    </Box>
+    <Chip
+      size="small"
+      variant="outlined"
+      color={style.color}
+      label={style.label}
+      sx={{ fontSize: 12, height: 22, borderRadius: 999 }}
+    />
   )
 }
 
@@ -179,7 +168,7 @@ function AllAuditsPage() {
                         <CompliantBadge compliant={isOverallCompliant(audit.questions)} />
                       </TableCell>
                       <TableCell sx={bodyCellSx}>
-                        <ReviewCell status={audit.review_status} edited={audit.edited} />
+                        <ReviewCell status={audit.review_status} />
                       </TableCell>
                       <TableCell sx={bodyCellSx}>{confidence != null ? `${confidence}%` : '—'}</TableCell>
                     </TableRow>

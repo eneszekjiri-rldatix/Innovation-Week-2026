@@ -27,8 +27,7 @@ class AuditStatus(str, enum.Enum):
 
 class AuditReviewStatus(str, enum.Enum):
     PENDING = "PENDING"
-    APPROVED = "APPROVED"
-    REJECTED = "REJECTED"
+    REVIEWED = "REVIEWED"
 
 
 class Standard(Base):
@@ -111,7 +110,6 @@ class Answer(Base):
     )
     comment: Mapped[str | None] = mapped_column(Text)
     confidence: Mapped[float | None] = mapped_column(Float)
-    human_reviewed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False

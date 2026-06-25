@@ -45,8 +45,7 @@ function StatusBadge({ value }: { value: string | null }) {
 
 const REVIEW_STYLES: Record<AuditReviewStatus, { label: string; color: ChipColor }> = {
   PENDING: { label: 'Review: Pending', color: 'default' },
-  APPROVED: { label: 'Review: Approved', color: 'success' },
-  REJECTED: { label: 'Review: Rejected', color: 'error' },
+  REVIEWED: { label: 'Review: Reviewed', color: 'success' },
 }
 
 function ReviewBadge({ status }: { status: AuditReviewStatus }) {
@@ -57,17 +56,6 @@ function ReviewBadge({ status }: { status: AuditReviewStatus }) {
       color={style.color}
       label={style.label}
       sx={{ flexShrink: 0, fontSize: 14, fontWeight: 600, borderRadius: 999 }}
-    />
-  )
-}
-
-function ReviewedTag() {
-  return (
-    <Chip
-      size="small"
-      variant="filled"
-      label="Human reviewed"
-      sx={{ flexShrink: 0, fontSize: 11, height: 20, bgcolor: '#e3f0ef', color: '#14716d' }}
     />
   )
 }
@@ -201,20 +189,23 @@ function AuditPage() {
           ) : (
             <>
               <Button label="Edit answers" variant="outlined" size="small" disabled={!detail} onClick={startEditing} />
-              <Button
-                label="Approve"
-                color="secondary"
-                size="small"
-                disabled={!detail || reviewing || detail.review_status === 'APPROVED'}
-                onClick={() => handleReview('APPROVED')}
-              />
-              <Button
-                label="Reject"
-                variant="outlined"
-                size="small"
-                disabled={!detail || reviewing || detail.review_status === 'REJECTED'}
-                onClick={() => handleReview('REJECTED')}
-              />
+              {detail?.review_status === 'REVIEWED' ? (
+                <Button
+                  label="Mark as pending"
+                  variant="outlined"
+                  size="small"
+                  disabled={reviewing}
+                  onClick={() => handleReview('PENDING')}
+                />
+              ) : (
+                <Button
+                  label="Mark as reviewed"
+                  color="secondary"
+                  size="small"
+                  disabled={!detail || reviewing}
+                  onClick={() => handleReview('REVIEWED')}
+                />
+              )}
             </>
           )}
 
@@ -267,10 +258,7 @@ function AuditPage() {
                     <Typography sx={{ fontSize: 16, color: '#151d1e', fontWeight: 600 }}>
                       {q.short_label ?? q.text}
                     </Typography>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
-                      {q.human_reviewed && <ReviewedTag />}
-                      <StatusBadge value={q.value} />
-                    </Box>
+                    <StatusBadge value={q.value} />
                   </Box>
                   <Typography sx={{ fontSize: 13, color: 'rgba(0,0,0,0.62)', mb: 0.5 }}>{q.text}</Typography>
                   {q.comment && <Typography sx={{ fontSize: 14, color: '#000', mb: 0.5 }}>{q.comment}</Typography>}

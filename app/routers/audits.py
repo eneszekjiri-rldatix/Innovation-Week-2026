@@ -22,7 +22,6 @@ class QuestionAnswer(BaseModel):
     value: str | None
     comment: str | None
     confidence: float | None
-    human_reviewed: bool
 
 
 class AuditSummary(BaseModel):
@@ -35,7 +34,6 @@ class AuditSummary(BaseModel):
     has_video: bool
     review_status: str
     reviewed_at: datetime | None
-    edited: bool
     questions: list[QuestionAnswer]
 
 
@@ -49,7 +47,6 @@ class AuditDetail(BaseModel):
     has_video: bool
     review_status: str
     reviewed_at: datetime | None
-    edited: bool
     questions: list[QuestionAnswer]
 
 
@@ -103,9 +100,6 @@ def _build_questions(audit: Audit) -> list[QuestionAnswer]:
             value=answers_by_question[question.id].value.value if question.id in answers_by_question else None,
             comment=answers_by_question[question.id].comment if question.id in answers_by_question else None,
             confidence=answers_by_question[question.id].confidence if question.id in answers_by_question else None,
-            human_reviewed=(
-                answers_by_question[question.id].human_reviewed if question.id in answers_by_question else False
-            ),
         )
         for question in questions
     ]
@@ -122,7 +116,6 @@ def _build_detail(audit: Audit) -> AuditDetail:
         has_video=bool(audit.video_path),
         review_status=audit.review_status.value,
         reviewed_at=audit.reviewed_at,
-        edited=any(answer.human_reviewed for answer in audit.answers),
         questions=_build_questions(audit),
     )
 
@@ -162,7 +155,6 @@ def list_audits():
                     has_video=bool(audit.video_path),
                     review_status=audit.review_status.value,
                     reviewed_at=audit.reviewed_at,
-                    edited=any(answer.human_reviewed for answer in audit.answers),
                     questions=_build_questions(audit),
                 )
             )
@@ -209,7 +201,9 @@ def update_audit(audit_id: str, payload: AuditUpdateRequest):
             if answer.value != item.value or answer.comment != item.comment:
                 answer.value = item.value
                 answer.comment = item.comment
-                answer.human_reviewed = True
+                if audit.review_status != AuditReviewStatus.REVIEWED:
+                    audit.review_status = AuditReviewStatus.REVIEWED
+                    audit.reviewed_at = datetime.now(timezone.utc)
 
         db.commit()
         db.refresh(audit)
@@ -259,6 +253,7 @@ def get_trend(unit: str = "All Units", days: int = 30):
             select(Answer, Audit)
             .join(Audit, Answer.audit_id == Audit.id)
             .where(Audit.created_at >= since)
+            .where(Audit.review_status == AuditReviewStatus.REVIEWED)
             .where(Answer.value != AnswerValue.NOT_APPLICABLE)
         )
         if unit != "All Units":

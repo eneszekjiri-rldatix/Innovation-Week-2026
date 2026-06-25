@@ -1,6 +1,6 @@
 export type AnswerValue = 'COMPLIANT' | 'NOT_COMPLIANT' | 'NOT_APPLICABLE';
 
-export type AuditReviewStatus = 'PENDING' | 'APPROVED' | 'REJECTED';
+export type AuditReviewStatus = 'PENDING' | 'REVIEWED';
 
 export interface QuestionAnswer {
   question_id: string;
@@ -10,7 +10,6 @@ export interface QuestionAnswer {
   value: AnswerValue | null;
   comment: string | null;
   confidence: number | null;
-  human_reviewed: boolean;
 }
 
 export interface AuditSummary {
@@ -23,7 +22,6 @@ export interface AuditSummary {
   has_video: boolean;
   review_status: AuditReviewStatus;
   reviewed_at: string | null;
-  edited: boolean;
   questions: QuestionAnswer[];
 }
 
@@ -37,7 +35,6 @@ export interface AuditDetail {
   has_video: boolean;
   review_status: AuditReviewStatus;
   reviewed_at: string | null;
-  edited: boolean;
   questions: QuestionAnswer[];
 }
 

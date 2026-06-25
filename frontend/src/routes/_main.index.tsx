@@ -26,8 +26,9 @@ function AlertDashboard() {
   useEffect(() => {
     listAudits()
       .then((data) => {
-        setSummaries(data)
-        setSelectedAlertId((current) => current ?? data.find((s) => !s.overall_compliant)?.id ?? null)
+        const reviewed = data.filter((s) => s.review_status === 'REVIEWED')
+        setSummaries(reviewed)
+        setSelectedAlertId((current) => current ?? reviewed.find((s) => !s.overall_compliant)?.id ?? null)
       })
       .catch(() => setSummaries([]))
   }, [])
