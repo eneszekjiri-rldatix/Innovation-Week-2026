@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as MainRouteImport } from './routes/_main'
 import { Route as MainIndexRouteImport } from './routes/_main.index'
 import { Route as MainUploadRouteImport } from './routes/_main.upload'
+import { Route as MainScratchDialogTestRouteImport } from './routes/_main.scratch-dialog-test'
 import { Route as MainAuditsIndexRouteImport } from './routes/_main.audits.index'
 import { Route as MainAuditsDatetimeRouteImport } from './routes/_main.audits.$datetime'
 
@@ -29,6 +30,11 @@ const MainUploadRoute = MainUploadRouteImport.update({
   path: '/upload',
   getParentRoute: () => MainRoute,
 } as any)
+const MainScratchDialogTestRoute = MainScratchDialogTestRouteImport.update({
+  id: '/scratch-dialog-test',
+  path: '/scratch-dialog-test',
+  getParentRoute: () => MainRoute,
+} as any)
 const MainAuditsIndexRoute = MainAuditsIndexRouteImport.update({
   id: '/audits/',
   path: '/audits/',
@@ -42,11 +48,13 @@ const MainAuditsDatetimeRoute = MainAuditsDatetimeRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof MainIndexRoute
+  '/scratch-dialog-test': typeof MainScratchDialogTestRoute
   '/upload': typeof MainUploadRoute
   '/audits/$datetime': typeof MainAuditsDatetimeRoute
   '/audits/': typeof MainAuditsIndexRoute
 }
 export interface FileRoutesByTo {
+  '/scratch-dialog-test': typeof MainScratchDialogTestRoute
   '/upload': typeof MainUploadRoute
   '/': typeof MainIndexRoute
   '/audits/$datetime': typeof MainAuditsDatetimeRoute
@@ -55,6 +63,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_main': typeof MainRouteWithChildren
+  '/_main/scratch-dialog-test': typeof MainScratchDialogTestRoute
   '/_main/upload': typeof MainUploadRoute
   '/_main/': typeof MainIndexRoute
   '/_main/audits/$datetime': typeof MainAuditsDatetimeRoute
@@ -62,12 +71,18 @@ export interface FileRoutesById {
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/upload' | '/audits/$datetime' | '/audits/'
+  fullPaths:
+    | '/'
+    | '/scratch-dialog-test'
+    | '/upload'
+    | '/audits/$datetime'
+    | '/audits/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/upload' | '/' | '/audits/$datetime' | '/audits'
+  to: '/scratch-dialog-test' | '/upload' | '/' | '/audits/$datetime' | '/audits'
   id:
     | '__root__'
     | '/_main'
+    | '/_main/scratch-dialog-test'
     | '/_main/upload'
     | '/_main/'
     | '/_main/audits/$datetime'
@@ -101,6 +116,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MainUploadRouteImport
       parentRoute: typeof MainRoute
     }
+    '/_main/scratch-dialog-test': {
+      id: '/_main/scratch-dialog-test'
+      path: '/scratch-dialog-test'
+      fullPath: '/scratch-dialog-test'
+      preLoaderRoute: typeof MainScratchDialogTestRouteImport
+      parentRoute: typeof MainRoute
+    }
     '/_main/audits/': {
       id: '/_main/audits/'
       path: '/audits'
@@ -119,6 +141,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface MainRouteChildren {
+  MainScratchDialogTestRoute: typeof MainScratchDialogTestRoute
   MainUploadRoute: typeof MainUploadRoute
   MainIndexRoute: typeof MainIndexRoute
   MainAuditsDatetimeRoute: typeof MainAuditsDatetimeRoute
@@ -126,6 +149,7 @@ interface MainRouteChildren {
 }
 
 const MainRouteChildren: MainRouteChildren = {
+  MainScratchDialogTestRoute: MainScratchDialogTestRoute,
   MainUploadRoute: MainUploadRoute,
   MainIndexRoute: MainIndexRoute,
   MainAuditsDatetimeRoute: MainAuditsDatetimeRoute,

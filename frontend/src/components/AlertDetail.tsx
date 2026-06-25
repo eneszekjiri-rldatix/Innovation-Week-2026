@@ -7,6 +7,7 @@ import { getAudit } from '../api/client';
 import { auditDetailToStandards } from '../api/mappers';
 import { SectionTitle } from './SectionTitle';
 import { ComplianceChart } from './ComplianceChart';
+import { AddFindingDialog } from './AddFindingDialog';
 
 interface AlertDetailProps {
   alert: Alert;
@@ -17,6 +18,7 @@ interface AlertDetailProps {
 
 export function AlertDetail({ alert, onOpenAudit, trendSeries, trendUnitLabel }: AlertDetailProps) {
   const [standards, setStandards] = useState<Standard[]>([]);
+  const [isAddFindingOpen, setIsAddFindingOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -36,8 +38,14 @@ export function AlertDetail({ alert, onOpenAudit, trendSeries, trendUnitLabel }:
 
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
         <Button label="Open Audit" variant="outlined" onClick={onOpenAudit} />
-        <Button label="Create Finding" variant="outlined" />
+        <Button label="Create Finding" variant="outlined" onClick={() => setIsAddFindingOpen(true)} />
       </Box>
+
+      <AddFindingDialog
+        open={isAddFindingOpen}
+        onClose={() => setIsAddFindingOpen(false)}
+        onSubmit={() => setIsAddFindingOpen(false)}
+      />
 
       <SectionTitle title="Compliance trend" subtitle={trendUnitLabel} />
       <ComplianceChart series={trendSeries} />
