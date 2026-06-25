@@ -8,7 +8,7 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 
-from app.db.models import Answer, Audit, AnswerValue, Question, Standard
+from app.db.models import Answer, Audit, AnswerValue, AuditReviewStatus, Question, Standard
 from app.db.session import SessionLocal
 
 router = APIRouter()
@@ -22,6 +22,7 @@ class QuestionAnswer(BaseModel):
     value: str | None
     comment: str | None
     confidence: float | None
+    human_reviewed: bool
 
 
 class AuditSummary(BaseModel):
@@ -32,6 +33,9 @@ class AuditSummary(BaseModel):
     overall_compliant: bool
     failed_questions: list[str]
     has_video: bool
+    review_status: str
+    reviewed_at: datetime | None
+    edited: bool
     questions: list[QuestionAnswer]
 
 
@@ -43,7 +47,14 @@ class AuditDetail(BaseModel):
     created_at: datetime
     completed_at: datetime | None
     has_video: bool
+    review_status: str
+    reviewed_at: datetime | None
+    edited: bool
     questions: list[QuestionAnswer]
+
+
+class AuditReviewRequest(BaseModel):
+    status: AuditReviewStatus
 
 
 class AnswerUpdateItem(BaseModel):
@@ -92,6 +103,9 @@ def _build_questions(audit: Audit) -> list[QuestionAnswer]:
             value=answers_by_question[question.id].value.value if question.id in answers_by_question else None,
             comment=answers_by_question[question.id].comment if question.id in answers_by_question else None,
             confidence=answers_by_question[question.id].confidence if question.id in answers_by_question else None,
+            human_reviewed=(
+                answers_by_question[question.id].human_reviewed if question.id in answers_by_question else False
+            ),
         )
         for question in questions
     ]
@@ -106,6 +120,9 @@ def _build_detail(audit: Audit) -> AuditDetail:
         created_at=audit.created_at,
         completed_at=audit.completed_at,
         has_video=bool(audit.video_path),
+        review_status=audit.review_status.value,
+        reviewed_at=audit.reviewed_at,
+        edited=any(answer.human_reviewed for answer in audit.answers),
         questions=_build_questions(audit),
     )
 
@@ -143,6 +160,9 @@ def list_audits():
                     overall_compliant=not failed,
                     failed_questions=failed,
                     has_video=bool(audit.video_path),
+                    review_status=audit.review_status.value,
+                    reviewed_at=audit.reviewed_at,
+                    edited=any(answer.human_reviewed for answer in audit.answers),
                     questions=_build_questions(audit),
                 )
             )
@@ -186,8 +206,34 @@ def update_audit(audit_id: str, payload: AuditUpdateRequest):
                 raise HTTPException(
                     status_code=400, detail=f"No existing answer for question {item.question_id} on this audit"
                 )
-            answer.value = item.value
-            answer.comment = item.comment
+            if answer.value != item.value or answer.comment != item.comment:
+                answer.value = item.value
+                answer.comment = item.comment
+                answer.human_reviewed = True
+
+        db.commit()
+        db.refresh(audit)
+        return _build_detail(audit)
+
+
+@router.put("/audits/{audit_id}/review", response_model=AuditDetail)
+def review_audit(audit_id: str, payload: AuditReviewRequest):
+    with SessionLocal() as db:
+        audit = db.get(
+            Audit,
+            _parse_uuid(audit_id),
+            options=[
+                joinedload(Audit.standard).joinedload(Standard.questions),
+                joinedload(Audit.answers),
+            ],
+        )
+        if audit is None:
+            raise HTTPException(status_code=404, detail="Audit not found")
+
+        audit.review_status = payload.status
+        audit.reviewed_at = (
+            None if payload.status == AuditReviewStatus.PENDING else datetime.now(timezone.utc)
+        )
 
         db.commit()
         db.refresh(audit)

@@ -12,9 +12,9 @@ import {
 } from '@mui/material'
 import { Button } from '@rld-engineering/base-camp-react'
 import { TopBar } from '../components/TopBar'
-import { getAudit, updateAudit, videoUrl } from '../api/client'
+import { getAudit, reviewAudit, updateAudit, videoUrl } from '../api/client'
 import { averageConfidencePercent, isOverallCompliant } from '../api/mappers'
-import type { AnswerValue, AuditDetail } from '../types/api'
+import type { AnswerValue, AuditDetail, AuditReviewStatus } from '../types/api'
 
 export const Route = createFileRoute('/_main/audits/$datetime')({
   component: AuditPage,
@@ -39,6 +39,35 @@ function StatusBadge({ value }: { value: string | null }) {
       color={style.color}
       variant="outlined"
       sx={{ flexShrink: 0, fontSize: 12, height: 22 }}
+    />
+  )
+}
+
+const REVIEW_STYLES: Record<AuditReviewStatus, { label: string; color: ChipColor }> = {
+  PENDING: { label: 'Review: Pending', color: 'default' },
+  APPROVED: { label: 'Review: Approved', color: 'success' },
+  REJECTED: { label: 'Review: Rejected', color: 'error' },
+}
+
+function ReviewBadge({ status }: { status: AuditReviewStatus }) {
+  const style = REVIEW_STYLES[status]
+  return (
+    <Chip
+      variant="outlined"
+      color={style.color}
+      label={style.label}
+      sx={{ flexShrink: 0, fontSize: 14, fontWeight: 600, borderRadius: 999 }}
+    />
+  )
+}
+
+function ReviewedTag() {
+  return (
+    <Chip
+      size="small"
+      variant="filled"
+      label="Human reviewed"
+      sx={{ flexShrink: 0, fontSize: 11, height: 20, bgcolor: '#e3f0ef', color: '#14716d' }}
     />
   )
 }
@@ -83,6 +112,7 @@ function AuditPage() {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState<AuditDetail['questions']>([])
   const [saving, setSaving] = useState(false)
+  const [reviewing, setReviewing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -128,6 +158,19 @@ function AuditPage() {
     }
   }
 
+  async function handleReview(status: AuditReviewStatus) {
+    setReviewing(true)
+    setError(null)
+    try {
+      const updated = await reviewAudit(auditId, status)
+      setDetail(updated)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update review')
+    } finally {
+      setReviewing(false)
+    }
+  }
+
   return (
     <Box sx={{ minHeight: '100vh', bgcolor: '#fff' }}>
       <TopBar />
@@ -142,6 +185,7 @@ function AuditPage() {
           </Typography>
 
           {detail && <OverallComplianceBadge compliant={isOverallCompliant(detail.questions)} />}
+          {detail && <ReviewBadge status={detail.review_status} />}
 
           {editing ? (
             <>
@@ -155,7 +199,23 @@ function AuditPage() {
               />
             </>
           ) : (
-            <Button label="Edit answers" variant="outlined" size="small" disabled={!detail} onClick={startEditing} />
+            <>
+              <Button label="Edit answers" variant="outlined" size="small" disabled={!detail} onClick={startEditing} />
+              <Button
+                label="Approve"
+                color="secondary"
+                size="small"
+                disabled={!detail || reviewing || detail.review_status === 'APPROVED'}
+                onClick={() => handleReview('APPROVED')}
+              />
+              <Button
+                label="Reject"
+                variant="outlined"
+                size="small"
+                disabled={!detail || reviewing || detail.review_status === 'REJECTED'}
+                onClick={() => handleReview('REJECTED')}
+              />
+            </>
           )}
 
           <Button label="Back to Alerts" variant="outlined" size="small" onClick={() => navigate({ to: '/' })} />
@@ -207,7 +267,10 @@ function AuditPage() {
                     <Typography sx={{ fontSize: 16, color: '#151d1e', fontWeight: 600 }}>
                       {q.short_label ?? q.text}
                     </Typography>
-                    <StatusBadge value={q.value} />
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+                      {q.human_reviewed && <ReviewedTag />}
+                      <StatusBadge value={q.value} />
+                    </Box>
                   </Box>
                   <Typography sx={{ fontSize: 13, color: 'rgba(0,0,0,0.62)', mb: 0.5 }}>{q.text}</Typography>
                   {q.comment && <Typography sx={{ fontSize: 14, color: '#000', mb: 0.5 }}>{q.comment}</Typography>}

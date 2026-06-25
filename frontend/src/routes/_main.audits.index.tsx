@@ -15,7 +15,7 @@ import { Page, Button } from '@rld-engineering/base-camp-react'
 import { TopBar } from '../components/TopBar'
 import { listAudits, videoUrl } from '../api/client'
 import { averageConfidencePercent, formatDateTimeLabel, isOverallCompliant } from '../api/mappers'
-import type { AnswerValue, AuditSummary } from '../types/api'
+import type { AnswerValue, AuditReviewStatus, AuditSummary } from '../types/api'
 
 export const Route = createFileRoute('/_main/audits/')({
   component: AllAuditsPage,
@@ -26,6 +26,35 @@ function CriterionCell({ value }: { value: AnswerValue | null }) {
   if (value === 'NOT_COMPLIANT') return <Typography sx={{ fontSize: 13, color: '#cc2121' }}>✕ No</Typography>
   if (value === 'NOT_APPLICABLE') return <Typography sx={{ fontSize: 13, color: '#999999' }}>N/A</Typography>
   return <Typography sx={{ fontSize: 13, color: '#999999' }}>—</Typography>
+}
+
+const REVIEW_CHIP: Record<AuditReviewStatus, { label: string; color: 'success' | 'error' | 'default' }> = {
+  PENDING: { label: 'Pending', color: 'default' },
+  APPROVED: { label: 'Approved', color: 'success' },
+  REJECTED: { label: 'Rejected', color: 'error' },
+}
+
+function ReviewCell({ status, edited }: { status: AuditReviewStatus; edited: boolean }) {
+  const style = REVIEW_CHIP[status]
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+      <Chip
+        size="small"
+        variant="outlined"
+        color={style.color}
+        label={style.label}
+        sx={{ fontSize: 12, height: 22, borderRadius: 999 }}
+      />
+      {edited && (
+        <Chip
+          size="small"
+          variant="filled"
+          label="Edited"
+          sx={{ fontSize: 11, height: 20, bgcolor: '#e3f0ef', color: '#14716d' }}
+        />
+      )}
+    </Box>
+  )
 }
 
 function CompliantBadge({ compliant }: { compliant: boolean }) {
@@ -104,6 +133,7 @@ function AllAuditsPage() {
                     </TableCell>
                   ))}
                   <TableCell sx={headCellSx}>Compliant?</TableCell>
+                  <TableCell sx={headCellSx}>Review</TableCell>
                   <TableCell sx={headCellSx}>Confidence</TableCell>
                 </TableRow>
               </TableHead>
@@ -147,6 +177,9 @@ function AllAuditsPage() {
                       ))}
                       <TableCell sx={bodyCellSx}>
                         <CompliantBadge compliant={isOverallCompliant(audit.questions)} />
+                      </TableCell>
+                      <TableCell sx={bodyCellSx}>
+                        <ReviewCell status={audit.review_status} edited={audit.edited} />
                       </TableCell>
                       <TableCell sx={bodyCellSx}>{confidence != null ? `${confidence}%` : '—'}</TableCell>
                     </TableRow>

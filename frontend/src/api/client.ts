@@ -1,6 +1,7 @@
 import type {
   AnswerUpdateItem,
   AuditDetail,
+  AuditReviewStatus,
   AuditSummary,
   TrendResponse,
   UploadResponse,
@@ -29,6 +30,14 @@ export function updateAudit(auditId: string, answers: AnswerUpdateItem[]): Promi
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ answers }),
+  }).then((res) => handle<AuditDetail>(res));
+}
+
+export function reviewAudit(auditId: string, status: AuditReviewStatus): Promise<AuditDetail> {
+  return fetch(`${BASE_URL}/audits/${auditId}/review`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status }),
   }).then((res) => handle<AuditDetail>(res));
 }
 

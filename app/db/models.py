@@ -25,6 +25,12 @@ class AuditStatus(str, enum.Enum):
     COMPLETED = "COMPLETED"
 
 
+class AuditReviewStatus(str, enum.Enum):
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+
+
 class Standard(Base):
     __tablename__ = "standards"
 
@@ -76,6 +82,12 @@ class Audit(Base):
     )
     unit: Mapped[str] = mapped_column(Text, nullable=False, default="")
     video_path: Mapped[str | None] = mapped_column(Text)
+    review_status: Mapped[AuditReviewStatus] = mapped_column(
+        Enum(AuditReviewStatus, name="audit_review_status", create_constraint=True),
+        nullable=False,
+        default=AuditReviewStatus.PENDING,
+    )
+    reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
@@ -99,6 +111,7 @@ class Answer(Base):
     )
     comment: Mapped[str | None] = mapped_column(Text)
     confidence: Mapped[float | None] = mapped_column(Float)
+    human_reviewed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
